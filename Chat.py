@@ -42,6 +42,7 @@ import logging
 from prompt_toolkit import PromptSession
 from prompt_toolkit.completion import WordCompleter
 from prompt_toolkit.history import InMemoryHistory
+from config import API_KEY, API_URL, MODEL_NAME
 
 # 初始化日志记录
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
@@ -93,8 +94,6 @@ command_completer = WordCompleter(list(COMMANDS.keys()), ignore_case=True)
 prompt_session = PromptSession(history=InMemoryHistory())
 
 # API 配置
-api_key = "9c70867a71f29253e978f053863d4f1f.cayZWvePGcRF2U5C"
-api_url = "https://open.bigmodel.cn/api/paas/v4/chat/completions"
 max_retries = 3  # 最大重试次数
 retry_delay = 2  # 重试延迟时间（秒）
 
@@ -143,10 +142,10 @@ async def get_response(session: aiohttp.ClientSession, prompt: str) -> str:
     """
     headers = {
         "Content-Type": "application/json",
-        "Authorization": f"Bearer {api_key}"
+        "Authorization": f"Bearer {API_KEY}"
     }
     payload = {
-        "model": "glm-4-flash",
+        "model": MODEL_NAME,
         "messages": [
             {"role": "user", "content": prompt}
         ]
@@ -155,7 +154,7 @@ async def get_response(session: aiohttp.ClientSession, prompt: str) -> str:
     retries = 0
     while retries < max_retries:
         try:
-            async with session.post(api_url, headers=headers, json=payload) as response:
+            async with session.post(API_URL, headers=headers, json=payload) as response:
                 if response.status == 200:
                     response_data = await response.json()
                     response_text = response_data['choices'][0]['message']['content']
