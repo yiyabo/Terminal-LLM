@@ -39,3 +39,7 @@ ENV/
 
 # Local history
 .shell_ai_history
+
+# Local test files
+test.py
+*.bak
