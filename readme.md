@@ -39,8 +39,8 @@ python-dotenv>=0.19.0 # 环境变量管理
 
 1. 克隆仓库：
 ```bash
-git clone https://github.com/yourusername/ChatGLM.git
-cd ChatGLM
+git clone https://github.com/yiyabo/Terminal-LLM.git
+cd Terminal-LLM
 ```
 
 2. 安装依赖：
@@ -51,7 +51,7 @@ pip install -r requirements.txt
 3. 配置环境变量：
 ```bash
 cp .env.example .env
-# 编辑 .env 文件，填入你的 API 密钥
+# 编辑 .env 文件，填入你的 API 密钥和其他配置
 ```
 
 ### 使用方法
