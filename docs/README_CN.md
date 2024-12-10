@@ -1,6 +1,6 @@
 # Terminal-LLM
 
-中文 | [English](README_EN.md)
+中文 | [English](README.md)
 
 一个优雅的终端版 LLM 客户端，提供美观的界面和流畅的用户体验。
 
