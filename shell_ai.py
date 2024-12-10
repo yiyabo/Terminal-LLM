@@ -34,7 +34,7 @@
     3. 使用 Ctrl+C 取消当前操作
     4. 使用 Ctrl+D 或输入 'exit' 退出程序
 
-作者：ChatGLM Team
+作者：Yiyabo!
 日期：2024-12-10
 """
 

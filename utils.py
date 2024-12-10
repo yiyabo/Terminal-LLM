@@ -16,7 +16,7 @@
 - typing：类型注解支持
 - re：正则表达式支持
 
-作者：ChatGLM Team
+作者：Yiyabo!
 日期：2024-12-10
 """
 
@@ -24,6 +24,7 @@ import json
 import os
 from typing import List, Dict, Optional
 import hashlib
+import re
 
 class ChatHistory:
     """对话历史管理类。
@@ -191,16 +192,47 @@ def format_bold_text(text: str) -> str:
 
     返回：
         str: 格式化后的文本
-
-    示例：
-        >>> print(format_bold_text("**重要提示**"))
-        [bold cyan]重要提示[/bold cyan]
-        >>> print(format_bold_text("- 第一项"))
-        • 第一项
     """
-    import re
-    # 首先处理加粗文本
-    text = re.sub(r'\*\*(.*?)\*\*', lambda m: f'[bold cyan]{m.group(1)}[/bold cyan]', text)
-    # 将行首的破折号转换为圆点
-    text = re.sub(r'^\s*-\s*', '• ', text, flags=re.MULTILINE)
-    return text
+    # 处理标题（以 # 开头的行）
+    text = re.sub(r'^#\s+(.+)$', r'[bold magenta]\1[/bold magenta]', text, flags=re.MULTILINE)
+    
+    # 处理数字列表项的加粗标题
+    text = re.sub(r'^(\d+\.)\s+\*\*([^*]+)\*\*', r'\1 [bold cyan]\2[/bold cyan]', text, flags=re.MULTILINE)
+    
+    # 处理其他加粗文本
+    text = re.sub(r'\*\*([^*]+)\*\*', r'[bold cyan]\1[/bold cyan]', text)
+    
+    # 处理列表项（以 - 或 • 开头的行）
+    text = re.sub(r'^\s*[-•]\s*(.+)$', r'  [cyan]•[/cyan] \1', text, flags=re.MULTILINE)
+    
+    # 处理子列表项（缩进的列表项）
+    text = re.sub(r'^\s{4,}[-•]\s*(.+)$', r'    [dim cyan]○[/dim cyan] \1', text, flags=re.MULTILINE)
+    
+    # 处理引用文本
+    text = re.sub(r'^\s*>\s+(.+)$', r'[dim italic]\1[/dim italic]', text, flags=re.MULTILINE)
+    
+    # 处理行内代码
+    text = re.sub(r'`([^`]+)`', r'[bold yellow]\1[/bold yellow]', text)
+    
+    # 处理斜体文本
+    text = re.sub(r'\*([^*]+)\*', r'[italic]\1[/italic]', text)
+    
+    # 处理长句子的自动换行和对齐
+    lines = text.split('\n')
+    formatted_lines = []
+    for line in lines:
+        if len(line.strip()) > 80:  # 如果行长度超过80个字符
+            # 保持缩进，将文本按照标点符号分割成多行
+            indent = re.match(r'^\s*', line).group()
+            content = line.strip()
+            parts = re.split(r'([。，；：])', content)
+            new_line = indent
+            for i in range(0, len(parts)-1, 2):
+                new_line += parts[i] + parts[i+1] + '\n' + indent
+            if len(parts) % 2 == 1:
+                new_line += parts[-1]
+            formatted_lines.append(new_line.rstrip())
+        else:
+            formatted_lines.append(line)
+    
+    return '\n'.join(formatted_lines)

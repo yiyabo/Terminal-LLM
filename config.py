@@ -22,7 +22,7 @@
     - CHATGLM_API_URL (可选)
     - CHATGLM_MODEL (可选)
 
-作者：ChatGLM Team
+作者：Yiyabo!
 日期：2024-12-10
 """
 
@@ -61,6 +61,8 @@ LANGUAGES = {
         "clear_message": "Screen cleared.",
         "history_title": "Chat History",
         "language_changed": "Language changed to English.",
+        "invalid_command": "Invalid command. Type /help to see available commands.",
+        "timeout": "Request timeout, please try again later",
     },
     "zh": {
         "welcome": "✨欢迎使用终端版本ChatGLM✨",
@@ -73,8 +75,30 @@ LANGUAGES = {
         "clear_message": "屏幕已清除。",
         "history_title": "聊天记录",
         "language_changed": "语言已切换为中文。",
+        "invalid_command": "无效的命令。输入 /help 查看可用命令。",
+        "timeout": "请求超时，请稍后重试",
     },
 }
+
+_current_language = LANGUAGES["zh"]  # 默认使用中文
+
+def get_current_language():
+    """获取当前语言配置。"""
+    return _current_language
+
+def set_current_language(lang_code: str):
+    """设置当前语言。
+    
+    参数：
+        lang_code (str): 语言代码 ('en' 或 'zh')
+        
+    异常：
+        KeyError: 当语言代码不存在时抛出
+    """
+    global _current_language
+    if lang_code not in LANGUAGES:
+        raise KeyError(f"Language '{lang_code}' not supported")
+    _current_language = LANGUAGES[lang_code]
 
 # 命令配置
 COMMANDS = {

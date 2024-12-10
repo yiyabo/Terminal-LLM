@@ -1,139 +1,229 @@
-# ChatGLM 终端助手
+# Terminal ChatGLM 
 
-基于 ChatGLM API 的智能终端助手，提供自然语言对话和 Shell 命令解释功能。项目采用异步编程模型，支持多语言切换，并具有完善的错误处理机制。
+一个优雅的终端版 ChatGLM 客户端，提供美观的界面和流畅的用户体验。
 
-## ✨ 主要特性
+## 特性
 
-### 🤖 聊天助手 (Chat.py)
-- **多语言支持**：无缝切换中英文界面
-- **异步处理**：基于 `asyncio` 的高性能异步通信
-- **智能缓存**：减少重复请求，提升响应速度
-- **优雅的界面**：使用 `rich` 库实现精美的终端展示
-- **完整的错误处理**：自动重试、超时处理、友好的错误提示
+- 精美的终端界面
+  - 彩色动画和图标
+  - 优雅的面板和边框
+  - 格式化的文本显示
+  - 自动换行和对齐
 
-### 🐚 Shell 智能助手 (shell_ai.py)
-- **自然语言转换**：将自然语言描述智能转换为 Shell 命令
-- **命令确认机制**：执行前可预览和编辑命令
-- **本地历史记录**：自动保存命令历史，方便复用
-- **安全执行环境**：内置安全检查机制
-- **美化输出**：格式化展示命令结果
+- 强大的功能
+  - 智能缓存机制
+  - 历史记录管理
+  - 多语言支持
+  - 命令行补全
 
-## 📋 系统要求
+- 实用的命令
+  - `/help` - 显示帮助信息
+  - `/clear` - 清屏
+  - `/history` - 查看历史记录
+  - `/lang` - 切换语言 (支持中英文)
+  - `/exit` 或 `/quit` - 退出程序
 
-- Python 3.8+
-- macOS/Linux（Windows 支持可能不完整）
+## 快速开始
 
-## 📦 依赖说明
+### 安装依赖
 
-```bash
-# 核心依赖
-aiohttp>=3.8.0        # 异步 HTTP 客户端
-rich>=10.0.0          # 终端美化
-prompt_toolkit>=3.0.0  # 命令行交互
-python-dotenv>=0.19.0 # 环境变量管理
-```
-
-## 🚀 快速开始
-
-### 安装
-
-1. 克隆仓库：
-```bash
-git clone https://github.com/yiyabo/Terminal-LLM.git
-cd Terminal-LLM
-```
-
-2. 安装依赖：
 ```bash
 pip install -r requirements.txt
 ```
 
-3. 配置环境变量：
+### 配置
+
+1. 复制配置文件模板：
 ```bash
-cp .env.example .env
-# 编辑 .env 文件，填入你的 API 密钥和其他配置
+cp config.example.py config.py
 ```
 
-### 使用方法
+2. 编辑 `config.py`，设置你的 API 密钥：
+```python
+API_KEY = "your-api-key-here"
+```
 
-#### 聊天助手
+### 运行
+
 ```bash
 python Chat.py
 ```
 
-**常用命令**：
-- `/lang zh` - 切换到中文
-- `/lang en` - 切换到英文
-- `/clear` - 清屏
-- `/exit` - 退出程序
+## 项目结构
 
-#### Shell 助手
+```
+Terminal-LLM/
+├── Chat.py          # 主程序入口
+├── commands.py      # 命令处理模块
+├── config.py        # 配置文件
+├── ui.py           # 用户界面模块
+└── utils.py        # 工具模块
+```
+
+## 使用提示
+
+1. **命令补全**：输入 `/` 后按 Tab 键可以查看所有可用命令
+2. **历史记录**：使用 `/history` 查看最近的对话历史
+3. **语言切换**：使用 `/lang zh` 或 `/lang en` 切换界面语言
+4. **清屏**：使用 `/clear` 清理屏幕并重新显示欢迎信息
+
+## 界面展示
+
+- 优雅的欢迎界面
+- 流畅的思考动画
+- 美观的响应格式
+- 清晰的错误提示
+- 精美的命令帮助
+
+## 技术栈
+
+- Python 3.8+
+- Rich：终端美化
+- Prompt Toolkit：命令行交互
+- aiohttp：异步 HTTP 客户端
+- ChatGLM API：AI 对话支持
+
+## 开发计划
+
+- [ ] 添加更多的格式化选项
+- [ ] 实现更多实用命令
+- [ ] 优化缓存机制
+- [ ] 添加配置文件导入/导出
+- [ ] 支持更多的 AI 模型
+
+## 作者
+
+**Yiyabo!**
+
+## 许可证
+
+MIT License
+
+## 致谢
+
+感谢以下开源项目：
+- [Rich](https://github.com/Textualize/rich)
+- [python-prompt-toolkit](https://github.com/prompt-toolkit/python-prompt-toolkit)
+- [aiohttp](https://github.com/aio-libs/aiohttp)
+- [ChatGLM](https://github.com/THUDM/ChatGLM)
+
+## 终端配置教程
+
+### Windows
+
+1. **使用 PowerShell**
+```powershell
+# 1. 打开 PowerShell 配置文件
+notepad $PROFILE
+
+# 2. 添加以下内容
+function chat {
+    python "C:\path\to\Terminal-LLM\Chat.py"
+}
+
+# 3. 保存并重新加载配置
+. $PROFILE
+```
+
+2. **使用 Command Prompt (cmd)**
+```batch
+# 1. 创建一个批处理文件
+echo @echo off > %USERPROFILE%\chat.bat
+echo python "C:\path\to\Terminal-LLM\Chat.py" >> %USERPROFILE%\chat.bat
+
+# 2. 添加到系统环境变量
+setx PATH "%PATH%;%USERPROFILE%"
+```
+
+### macOS
+
+1. **使用 Bash**
 ```bash
-python shell_ai.py
+# 1. 打开 bash 配置文件
+nano ~/.bashrc
+
+# 2. 添加以下内容
+alias chat='python /path/to/Terminal-LLM/Chat.py'
+
+# 3. 保存并重新加载配置
+source ~/.bashrc
 ```
 
-**示例用法**：
+2. **使用 Zsh**
+```zsh
+# 1. 打开 zsh 配置文件
+nano ~/.zshrc
+
+# 2. 添加以下内容
+alias chat='python /path/to/Terminal-LLM/Chat.py'
+
+# 3. 保存并重新加载配置
+source ~/.zshrc
 ```
-🤖 > 帮我找出当前目录最大的5个文件
-Suggested command: ls -lhS | head -n 5
-Execute this command? (y/n/edit):
+
+### Linux
+
+1. **使用 Bash**
+```bash
+# 1. 打开 bash 配置文件
+nano ~/.bashrc
+
+# 2. 添加以下内容
+alias chat='python /path/to/Terminal-LLM/Chat.py'
+
+# 3. 保存并重新加载配置
+source ~/.bashrc
 ```
 
-## ⚙️ 配置说明
+2. **使用 Zsh**
+```zsh
+# 1. 打开 zsh 配置文件
+nano ~/.zshrc
 
-### 环境变量
-- `CHATGLM_API_KEY` - API 密钥
-- `CHATGLM_API_URL` - API 端点
-- `CHATGLM_MODEL` - 模型名称
+# 2. 添加以下内容
+alias chat='python /path/to/Terminal-LLM/Chat.py'
 
-### 配置文件
-- `config.py` - 核心配置项
-- `utils.py` - 工具类和辅助函数
+# 3. 保存并重新加载配置
+source ~/.zshrc
+```
 
-## 🔒 安全说明
+3. **创建系统级命令**
+```bash
+# 1. 创建一个软链接到 /usr/local/bin
+sudo ln -s /path/to/Terminal-LLM/Chat.py /usr/local/bin/chat
 
-1. **API 密钥保护**
-   - 使用环境变量管理敏感信息
-   - 避免在代码中硬编码密钥
+# 2. 添加执行权限
+sudo chmod +x /usr/local/bin/chat
+```
 
-2. **Shell 命令安全**
-   - 命令执行前进行确认
-   - 内置安全检查机制
-   - 支持命令编辑和取消
+配置完成后，在任何目录下都可以直接使用 `chat` 命令启动程序。
 
-## 🔍 故障排除
+### 验证安装
 
-### 常见问题
-1. API 连接失败
-   - 检查网络连接
-   - 验证 API 密钥是否正确
-   - 确认 API 端点是否可访问
+在任何终端中输入：
+```bash
+chat
+```
 
-2. 命令执行错误
-   - 检查命令语法
-   - 确认是否有足够权限
-   - 查看错误日志获取详细信息
+如果看到以下欢迎信息，说明配置成功：
+```
+✨欢迎使用终端版本ChatGLM✨
+```
 
-## 🤝 贡献指南
+### 故障排除
 
-欢迎提交 Pull Request 或 Issue！
+1. **命令未找到**
+   - 确认配置文件路径是否正确
+   - 检查是否已重新加载配置文件
+   - 验证 Python 是否在环境变量中
 
-1. Fork 本仓库
-2. 创建特性分支
-3. 提交变更
-4. 推送到分支
-5. 创建 Pull Request
+2. **权限问题**
+   - Windows：以管理员身份运行终端
+   - Linux/macOS：使用 `sudo` 进行配置
 
-## 📄 开源协议
-
-本项目采用 MIT 协议开源。
-
-## 👥 作者
-
-- ChatGLM Team
-
-## 📚 相关资源
-
-- [ChatGLM 官方文档](https://open.bigmodel.cn/docs/api)
-- [aiohttp 文档](https://docs.aiohttp.org/)
-- [Rich 文档](https://rich.readthedocs.io/)
+3. **Python 路径问题**
+   - 使用 `which python` 或 `where python` 确认 Python 路径
+   - 考虑使用完整的 Python 路径，如：
+     ```bash
+     alias chat='/usr/local/bin/python3 /path/to/Terminal-LLM/Chat.py'
+     ```
