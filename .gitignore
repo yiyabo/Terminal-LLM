@@ -43,3 +43,9 @@ ENV/
 # Local test files
 test.py
 *.bak
+
+# Data files
+data/cache/*
+data/history/*
+!data/cache/.gitkeep
+!data/history/.gitkeep
