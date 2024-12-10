@@ -11,12 +11,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Beautiful terminal interface with colored animations and icons
 - Smart caching mechanism for improved performance
 - Multi-language support (English and Chinese)
-- Command line completion
+- Command line auto-completion
 - Basic command set (/help, /clear, /history, /lang, /exit)
+- Development tool configurations:
+  - EditorConfig for consistent coding styles
+  - Pre-commit hooks for code quality checks
+  - Code formatting and linting tools integration
 
 ### Changed
-- Improved project structure with separate modules for config, core, data, and UI
-- Enhanced documentation with both English and Chinese versions
+- Optimized project structure with separate modules for config, core, data, and UI
+- Enhanced documentation in both English and Chinese
 
 ### Fixed
 - Initial setup and configuration issues

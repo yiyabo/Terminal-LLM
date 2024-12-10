@@ -11,3 +11,14 @@ For detailed information:
 - [贡献指南](docs/contribution/CONTRIBUTING_CN.md)
 - [Changelog](docs/changelog/CHANGELOG.md)
 - [更新日志](docs/changelog/CHANGELOG_CN.md)
+
+## Development Setup
+
+This project uses several development tools to maintain code quality:
+
+- EditorConfig for consistent coding styles
+- Pre-commit hooks for automated code checks
+- Code formatting with Black and isort
+- Code linting with Flake8
+
+For detailed setup instructions, please refer to the contributing guidelines.
