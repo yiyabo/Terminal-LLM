@@ -43,7 +43,7 @@ from prompt_toolkit.completion import WordCompleter
 from prompt_toolkit.history import InMemoryHistory
 from prompt_toolkit.formatted_text import HTML
 
-from config import (
+from src.config import (
     LANGUAGES,
     COMMANDS,
     API_KEY,
@@ -55,11 +55,12 @@ from config import (
     CACHE_ENABLED,
     CACHE_FILE,
     HISTORY_FILE,
+    LOG_FILE,
     get_current_language,
     set_current_language
 )
-from utils import ChatHistory, ResponseCache
-from commands import (
+from src.core.utils import ChatHistory, ResponseCache
+from src.core.commands import (
     CommandFactory,
     LangCommand,
     ExitCommand,
@@ -67,7 +68,7 @@ from commands import (
     HistoryCommand,
     HelpCommand
 )
-from ui import (
+from src.ui import (
     console,
     thinking_spinner,
     print_welcome,

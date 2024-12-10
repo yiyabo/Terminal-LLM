@@ -12,12 +12,12 @@ from typing import Optional
 from rich.console import Console
 from rich.align import Align
 from rich.panel import Panel
-from config import LANGUAGES, get_current_language, set_current_language
-from ui import console, print_welcome, print_help
-from utils import ChatHistory
+from src.config import LANGUAGES, get_current_language, set_current_language
+from src.ui import console, print_welcome, print_help
+from src.core.utils import ChatHistory
 
 # 初始化历史记录
-chat_history = ChatHistory('chat_history.json')
+chat_history = ChatHistory('data/history/chat_history.json')
 
 class Command(ABC):
     """命令接口。"""
@@ -40,9 +40,8 @@ class ExitCommand(Command):
     def execute(self, *args, **kwargs) -> bool:
         message = get_current_language()['exit_message']
         panel = Panel(
-            Align.center(f"[bold yellow]✨{message}✨[/bold yellow]"),
-            border_style="yellow",
-            padding=(1, 2)
+            Align.center(message),
+            style="bold green"
         )
         console.print(panel)
         return False

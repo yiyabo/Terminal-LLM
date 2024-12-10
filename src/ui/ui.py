@@ -17,12 +17,13 @@ from rich.progress import Progress, SpinnerColumn, TextColumn, BarColumn, TimeEl
 from rich.spinner import Spinner
 from rich.table import Table
 from rich.markdown import Markdown
-from config import get_current_language, COMMANDS
-from utils import format_bold_text
+from src.config import get_current_language, COMMANDS
+from src.core.utils import format_bold_text
 
+# 创建控制台对象
 console = Console()
 
-def create_progress() -> Progress:
+def create_progress():
     """创建进度条。
     
     返回：
@@ -61,7 +62,7 @@ class ThinkingSpinner:
     def __exit__(self, exc_type, exc_val, exc_tb):
         self.live.stop()
 
-def thinking_spinner() -> ThinkingSpinner:
+def thinking_spinner():
     """创建思考中动画。
     
     返回：
@@ -69,53 +70,55 @@ def thinking_spinner() -> ThinkingSpinner:
     """
     return ThinkingSpinner()
 
-def print_welcome() -> None:
+def print_welcome():
     """打印欢迎信息。"""
-    welcome_panel = Panel(
-        Align.center(f"[bold cyan]✨{get_current_language()['welcome']}✨[/bold cyan]"),
-        border_style="cyan",
-        padding=(1, 2)
+    welcome_text = get_current_language()['welcome']
+    panel = Panel(
+        Align.center(welcome_text),
+        style="bold green"
     )
-    console.print(welcome_panel)
+    console.print(panel)
 
-def print_response(response: str, elapsed_time: float) -> None:
+def print_response(response: str, elapsed_time: float):
     """打印 AI 响应。
     
     参数：
         response (str): AI 的响应文本
         elapsed_time (float): 响应耗时（秒）
     """
-    # 创建一个带边框的面板来显示响应
+    # 格式化响应文本
     formatted_response = format_bold_text(response)
-    response_panel = Panel(
-        formatted_response,
-        title="[bold cyan]Assistant[/bold cyan]",
-        border_style="cyan",
-        padding=(1, 2)
-    )
-    console.print(response_panel)
     
-    # 打印响应时间，使用暗色调
+    # 创建面板
+    panel = Panel(
+        formatted_response,
+        title="ChatGLM",
+        title_align="left",
+        border_style="green"
+    )
+    
+    # 打印响应和耗时
+    console.print(panel)
     console.print(
-        f"[dim italic]{get_current_language()['response_time'].format(time=elapsed_time)}[/dim italic]",
-        justify="right"
+        get_current_language()['response_time'].format(time=elapsed_time),
+        style="italic green"
     )
 
-def print_error(error: str) -> None:
+def print_error(error: str):
     """打印错误信息。
     
     参数：
         error (str): 错误信息
     """
-    error_panel = Panel(
-        f"[red]{get_current_language()['error_message'].format(error=error)}[/red]",
-        border_style="red",
-        title="[bold red]Error[/bold red]",
-        padding=(1, 2)
+    error_text = get_current_language()['error_message'].format(error=error)
+    panel = Panel(
+        error_text,
+        style="bold red",
+        title="Error"
     )
-    console.print(error_panel)
+    console.print(panel)
 
-def print_retry(error: str, retry: int, max_retries: int) -> None:
+def print_retry(error: str, retry: int, max_retries: int):
     """打印重试信息。
     
     参数：
@@ -123,30 +126,23 @@ def print_retry(error: str, retry: int, max_retries: int) -> None:
         retry (int): 当前重试次数
         max_retries (int): 最大重试次数
     """
-    retry_panel = Panel(
-        f"[yellow]{get_current_language()['retry_message'].format(error=error, retry=retry, max_retries=max_retries)}[/yellow]",
-        border_style="yellow",
-        title="[bold yellow]Retry[/bold yellow]",
-        padding=(1, 2)
+    retry_text = get_current_language()['retry_message'].format(
+        error=error,
+        retry=retry,
+        max_retries=max_retries
     )
-    console.print(retry_panel)
+    console.print(retry_text, style="yellow")
 
-def print_help() -> None:
+def print_help():
     """显示帮助信息。"""
-    commands_table = Table(
-        "Command", "Description",
-        title="[bold cyan]Available Commands[/bold cyan]",
-        border_style="cyan",
-        header_style="bold cyan",
-        padding=(0, 2)
-    )
+    # 创建帮助表格
+    table = Table(title="Commands", show_header=True)
+    table.add_column("Command", style="cyan")
+    table.add_column("Description", style="green")
     
-    for cmd, desc in COMMANDS.items():
-        commands_table.add_row(f"[green]{cmd}[/green]", desc)
+    # 添加命令说明
+    for command, description in COMMANDS.items():
+        table.add_row(command, description)
     
-    help_panel = Panel(
-        commands_table,
-        border_style="cyan",
-        padding=(1, 2)
-    )
-    console.print(help_panel)
+    # 打印表格
+    console.print(table)

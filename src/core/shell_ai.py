@@ -48,7 +48,7 @@ from prompt_toolkit.history import FileHistory
 from rich.console import Console
 from rich.panel import Panel
 from typing import Optional
-from config import API_KEY, API_URL, MODEL_NAME, REQUEST_TIMEOUT
+from src.config import API_KEY, API_URL, MODEL_NAME, REQUEST_TIMEOUT
 
 console = Console()
 

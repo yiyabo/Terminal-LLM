@@ -45,15 +45,16 @@ REQUEST_TIMEOUT = aiohttp.ClientTimeout(total=30)  # 请求超时时间（秒）
 
 # 缓存配置
 CACHE_ENABLED = True  # 是否启用响应缓存
-CACHE_FILE = 'chat_cache.json'  # 缓存文件路径
-HISTORY_FILE = 'chat_history.json'  # 历史记录文件路径
+CACHE_FILE = 'data/cache/chat_cache.json'  # 缓存文件路径
+HISTORY_FILE = 'data/history/chat_history.json'  # 历史记录文件路径
+LOG_FILE = 'data/chat.log'  # 日志文件路径
 
 # 多语言支持配置
 LANGUAGES = {
     "en": {
-        "welcome": "✨ Welcome to the ChatGLM Terminal Version ✨",
+        "welcome": "🤖 Welcome to Terminal-LLM! How can I assist you today? 🚀",
         "user_prompt": "🔎 User: ",
-        "exit_message": "🌟🌟 Exiting 🌟🌟",
+        "exit_message": "👋 Goodbye! Have a great day! ✨",
         "thinking": "Thinking, please wait...",
         "response_time": "Response time: {time:.2f} seconds",
         "error_message": "Error: {error}",
@@ -62,12 +63,12 @@ LANGUAGES = {
         "history_title": "Chat History",
         "language_changed": "Language changed to English.",
         "invalid_command": "Invalid command. Type /help to see available commands.",
-        "timeout": "Request timeout, please try again later",
+        "timeout": "Request timeout, please try again later"
     },
     "zh": {
-        "welcome": "✨欢迎使用终端版本ChatGLM✨",
+        "welcome": "🤖 欢迎使用 Terminal-LLM！我能为您做些什么？🚀",
         "user_prompt": "🔎 User: ",
-        "exit_message": "🌟🌟正在退出🌟🌟",
+        "exit_message": "👋 再见！祝您愉快！✨",
         "thinking": "正在思考中，请稍候...",
         "response_time": "响应时间: {time:.2f} 秒",
         "error_message": "错误: {error}",
@@ -76,21 +77,22 @@ LANGUAGES = {
         "history_title": "聊天记录",
         "language_changed": "语言已切换为中文。",
         "invalid_command": "无效的命令。输入 /help 查看可用命令。",
-        "timeout": "请求超时，请稍后重试",
-    },
+        "timeout": "请求超时，请稍后重试"
+    }
 }
 
-_current_language = LANGUAGES["zh"]  # 默认使用中文
+# 当前语言
+_current_language = 'zh'
 
 def get_current_language():
     """获取当前语言配置。"""
-    return _current_language
+    return LANGUAGES[_current_language]
 
 def set_current_language(lang_code: str):
     """设置当前语言。
     
     参数：
-        lang_code (str): 语言代码 ('en' 或 'zh')
+        lang_code (str): 语言代码，支持 'en' 和 'zh'
         
     异常：
         KeyError: 当语言代码不存在时抛出
@@ -98,13 +100,13 @@ def set_current_language(lang_code: str):
     global _current_language
     if lang_code not in LANGUAGES:
         raise KeyError(f"Language '{lang_code}' not supported")
-    _current_language = LANGUAGES[lang_code]
+    _current_language = lang_code
 
 # 命令配置
 COMMANDS = {
     'exit': '退出程序',
     'clear': '清除屏幕',
-    'history': '显示聊天历史',
-    'lang': '切换语言 (lang en/zh)',
+    'history': '显示历史记录',
+    'lang': '切换语言 (en/zh)',
     'help': '显示帮助信息'
 }
