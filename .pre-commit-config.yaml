@@ -16,14 +16,22 @@ repos:
     hooks:
       - id: black
         language_version: python3
+        args: ["--line-length=88"]
 
   - repo: https://github.com/PyCQA/isort
     rev: 5.12.0
     hooks:
       - id: isort
+        args: ["--profile", "black"]
 
-  - repo: https://github.com/PyCQA/flake8
-    rev: 6.1.0
+  - repo: local
     hooks:
-      - id: flake8
-        additional_dependencies: [flake8-docstrings]
+      - id: flake8-minimal
+        name: flake8
+        entry: flake8
+        language: python
+        types: [python]
+        args: [
+          "--max-line-length=88",
+          "--extend-ignore=D400,E203",
+        ]
