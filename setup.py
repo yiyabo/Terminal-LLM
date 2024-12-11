@@ -11,4 +11,9 @@ setup(
         "python-dotenv"
     ],
     python_requires=">=3.8",
+    entry_points={
+        'console_scripts': [
+            'terminal-llm=src.cli:cli'
+        ],
+    },
 )
