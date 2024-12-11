@@ -34,28 +34,34 @@
 ### 安装
 
 1. 克隆仓库：
-```bash
-git clone https://github.com/yourusername/Terminal-LLM.git
-cd Terminal-LLM
-```
+   ```bash
+   git clone https://github.com/yourusername/Terminal-LLM.git
+   cd Terminal-LLM
+   ```
 
-2. 以开发模式安装包：
-```bash
-pip install -e .
-```
+2. 安装 Poetry（如果尚未安装）：
+   ```bash
+   pip install poetry
+   ```
+
+3. 使用 Poetry 安装项目：
+   ```bash
+   poetry install
+   ```
 
 ### 使用方法
 
 安装完成后，你可以通过以下两种方式启动应用：
 
-1. 使用命令行工具：
+1. 使用 Poetry 运行：
    ```bash
-   terminal-llm
+   poetry run terminal-llm
    ```
 
-2. 直接运行 Python 脚本：
+2. 先激活虚拟环境：
    ```bash
-   python run.py
+   poetry shell
+   terminal-llm
    ```
 
 ### 配置

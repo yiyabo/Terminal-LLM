@@ -23,6 +23,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed
 - Optimized project structure with separate modules for config, core, data, and UI
 - Enhanced documentation in both English and Chinese
+- Migrated to Poetry for dependency management
+  - Added pyproject.toml for modern Python packaging
+  - Separated development and runtime dependencies
+  - Removed requirements.txt in favor of Poetry
 
 ### Fixed
 - Initial setup and configuration issues
