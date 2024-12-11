@@ -17,6 +17,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - EditorConfig for consistent coding styles
   - Pre-commit hooks for code quality checks
   - Code formatting and linting tools integration
+- Added CLI entry point for terminal-llm command
+- Added src/cli.py as the main entry point for the application
 
 ### Changed
 - Optimized project structure with separate modules for config, core, data, and UI

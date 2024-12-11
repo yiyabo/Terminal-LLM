@@ -39,10 +39,24 @@ git clone https://github.com/yourusername/Terminal-LLM.git
 cd Terminal-LLM
 ```
 
-2. Install dependencies:
+2. Install the package in development mode:
 ```bash
 pip install -e .
 ```
+
+### Usage
+
+After installation, you can start the application in two ways:
+
+1. Using the command line tool:
+   ```bash
+   terminal-llm
+   ```
+
+2. Running the Python script directly:
+   ```bash
+   python run.py
+   ```
 
 ### Configuration
 
@@ -56,12 +70,6 @@ touch .env
 CHATGLM_API_KEY=your-api-key-here
 CHATGLM_API_URL=your-api-url-here  # Optional
 CHATGLM_MODEL=your-model-name      # Optional
-```
-
-### Run
-
-```bash
-python run.py
 ```
 
 ## Project Structure

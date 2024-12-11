@@ -39,10 +39,24 @@ git clone https://github.com/yourusername/Terminal-LLM.git
 cd Terminal-LLM
 ```
 
-2. 安装依赖：
+2. 以开发模式安装包：
 ```bash
 pip install -e .
 ```
+
+### 使用方法
+
+安装完成后，你可以通过以下两种方式启动应用：
+
+1. 使用命令行工具：
+   ```bash
+   terminal-llm
+   ```
+
+2. 直接运行 Python 脚本：
+   ```bash
+   python run.py
+   ```
 
 ### 配置
 
@@ -56,12 +70,6 @@ touch .env
 CHATGLM_API_KEY=your-api-key-here
 CHATGLM_API_URL=your-api-url-here  # 可选
 CHATGLM_MODEL=your-model-name      # 可选
-```
-
-### 运行
-
-```bash
-python run.py
 ```
 
 ## 项目结构
