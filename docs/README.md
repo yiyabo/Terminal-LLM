@@ -39,23 +39,29 @@ git clone https://github.com/yourusername/Terminal-LLM.git
 cd Terminal-LLM
 ```
 
-2. Install the package in development mode:
+2. Install Poetry (if not already installed):
 ```bash
-pip install -e .
+pip install poetry
+```
+
+3. Install the project with Poetry:
+```bash
+poetry install
 ```
 
 ### Usage
 
 After installation, you can start the application in two ways:
 
-1. Using the command line tool:
+1. Using Poetry:
    ```bash
-   terminal-llm
+   poetry run terminal-llm
    ```
 
-2. Running the Python script directly:
+2. Activating the virtual environment first:
    ```bash
-   python run.py
+   poetry shell
+   terminal-llm
    ```
 
 ### Configuration
