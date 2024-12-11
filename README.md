@@ -28,7 +28,7 @@ Terminal-LLM 是一个优雅而强大的终端 LLM 客户端，旨在提供无�
 - 🛠️ 开发者友好：模块化设计、完整文档、类型提示、测试覆盖
 
 <p align="center">
-  <img src="/Users/wangxinxiang/LLM/Terminal-LLM/data/present_demo/present.png" alt="Terminal-LLM Demo" width="600">
+  <img src="data/present_demo/present.png" alt="Terminal-LLM Demo" width="600">
 </p>
 
 > 📖 请访问上述文档链接以获取详细信息。
