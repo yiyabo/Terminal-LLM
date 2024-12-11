@@ -2,50 +2,77 @@
 
 All notable changes to Terminal-LLM will be documented in this file.
 
-The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
+This format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
-### Added
-- Beautiful terminal interface with colored animations and icons
-- Smart caching mechanism for improved performance
-- Multi-language support (English and Chinese)
-- Command line auto-completion
-- Basic command set (/help, /clear, /history, /lang, /exit)
-- Development tool configurations:
-  - EditorConfig for consistent coding styles
-  - Pre-commit hooks for code quality checks
-  - Code formatting and linting tools integration
-- Added CLI entry point for terminal-llm command
-- Added src/cli.py as the main entry point for the application
+### New Features
+- **Terminal UI Enhancements**
+  - Beautiful loading animations and interactive feedback
+  - Intelligent code highlighting and formatting
+  - Rich Unicode icon support
+  - Adaptive terminal layout
+  - Command line auto-completion
 
-### Changed
-- Optimized project structure with separate modules for config, core, data, and UI
-- Enhanced documentation in both English and Chinese
-- Migrated to Poetry for dependency management
-  - Added pyproject.toml for modern Python packaging
-  - Separated development and runtime dependencies
-  - Removed requirements.txt in favor of Poetry
+- **Intelligent Dialogue System**
+  - FAISS-based local vector storage
+  - Efficient document chunking and vectorization
+  - Smart context management
+  - Seamless language switching
+  - Smart caching mechanism
 
-### Fixed
-- Initial setup and configuration issues
-- Package dependency management
+- **Development Tools Configuration**
+  - EditorConfig for consistent code style
+  - Pre-commit automated code checks
+  - Black & isort code formatting
+  - Flake8 code quality checks
+  - CLI entry point implementation
+
+### Optimizations
+- **Project Architecture**
+  - Modular refactoring for improved maintainability
+  - Enhanced configuration management
+  - Improved documentation system
+  - Performance and response time improvements
+  - Separated modules for config, core, data, and UI
+
+- **Dependency Management**
+  - Migration to Poetry for package management
+  - Optimized dependency structure
+  - Updated core dependency versions
+  - Removed legacy requirements.txt
+  - Modern Python packaging with pyproject.toml
+
+### Bug Fixes
+- Fixed initialization configuration issues
+- Optimized package dependency management
+- Fixed UI display anomalies
+- Improved asynchronous processing logic
 
 ## [0.1.0] - 2024-12-11
 
-### Added
-- Initial release of Terminal-LLM
-- Core LLM integration functionality
-- Basic terminal UI implementation
-- Configuration management system
-- Command history feature
-- Multi-language support framework
-- Project documentation structure
+### New Features
+- **Core Functionality**
+  - LLM integration
+  - Basic terminal interface
+  - Configuration management system
+  - Conversation history
+  - Multi-language support framework
+  - Basic command set (/help, /clear, /history, /lang, /exit)
+
+- **Documentation System**
+  - Project base documentation
+  - Development guide
+  - User manual
+  - Bilingual documentation support
+  - Project structure documentation
 
 ### Security
 - Secure environment variable handling
 - Basic input validation
+- API key management
+- Exception handling mechanism
 
 [Unreleased]: https://github.com/yourusername/Terminal-LLM/compare/v0.1.0...HEAD
 [0.1.0]: https://github.com/yourusername/Terminal-LLM/releases/tag/v0.1.0

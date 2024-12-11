@@ -47,6 +47,7 @@ REQUEST_TIMEOUT = aiohttp.ClientTimeout(total=30)  # 请求超时时间（秒）
 CACHE_ENABLED = True  # 是否启用响应缓存
 CACHE_FILE = 'data/cache/chat_cache.json'  # 缓存文件路径
 HISTORY_FILE = 'data/history/chat_history.json'  # 历史记录文件路径
+MAX_HISTORY_ITEMS = 100  # 最大历史记录数量
 LOG_FILE = 'data/chat.log'  # 日志文件路径
 
 # 多语言支持配置
@@ -104,9 +105,10 @@ def set_current_language(lang_code: str):
 
 # 命令配置
 COMMANDS = {
-    'exit': '退出程序',
-    'clear': '清除屏幕',
-    'history': '显示历史记录',
-    'lang': '切换语言 (en/zh)',
-    'help': '显示帮助信息'
+    '/exit': '退出程序',
+    '/clear': '清除屏幕',
+    '/history': '显示历史记录',
+    '/lang': '切换语言 (en/zh)',
+    '/help': '显示帮助信息',
+    '/load': '加载文档 (/load [文件路径])'
 }

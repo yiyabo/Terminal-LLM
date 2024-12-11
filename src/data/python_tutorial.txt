@@ -1,0 +1,98 @@
+Python 编程入门教程
+
+1. Python 简介
+Python 是一种高级编程语言，以其简洁的语法和强大的功能而闻名。它支持多种编程范式，包括面向对象编程、命令式编程和函数式编程。Python 的设计哲学强调代码的可读性，其语法允许程序员用更少的代码行表达概念。
+
+2. Python 基础语法
+2.1 变量和数据类型
+Python 中的变量不需要声明类型，解释器会根据赋值自动判断类型：
+- 整数：x = 5
+- 浮点数：y = 3.14
+- 字符串：name = "Python"
+- 布尔值：is_valid = True
+- 列表：numbers = [1, 2, 3, 4, 5]
+- 字典：person = {"name": "Alice", "age": 25}
+
+2.2 控制流
+Python 使用缩进来表示代码块：
+if condition:
+    # 执行代码
+elif another_condition:
+    # 执行其他代码
+else:
+    # 执行默认代码
+
+循环示例：
+for item in collection:
+    # 处理每个项目
+
+while condition:
+    # 循环执行代码
+
+3. 函数和类
+3.1 函数定义
+def greet(name):
+    return f"Hello, {name}!"
+
+3.2 类定义
+class Person:
+    def __init__(self, name, age):
+        self.name = name
+        self.age = age
+    
+    def introduce(self):
+        return f"I am {self.name}, {self.age} years old."
+
+4. Python 高级特性
+4.1 列表推导式
+squares = [x**2 for x in range(10)]
+
+4.2 生成器
+def fibonacci():
+    a, b = 0, 1
+    while True:
+        yield a
+        a, b = b, a + b
+
+4.3 装饰器
+def timer(func):
+    def wrapper(*args, **kwargs):
+        start = time.time()
+        result = func(*args, **kwargs)
+        end = time.time()
+        print(f"函数执行时间：{end - start}秒")
+        return result
+    return wrapper
+
+5. Python 最佳实践
+5.1 代码风格
+- 遵循 PEP 8 规范
+- 使用有意义的变量名
+- 添加适当的注释
+- 保持函数简短且功能单一
+
+5.2 异常处理
+try:
+    # 可能引发异常的代码
+except Exception as e:
+    # 处理异常
+finally:
+    # 清理代码
+
+5.3 模块化编程
+- 将代码分割成逻辑相关的模块
+- 使用包来组织模块
+- 遵循单一职责原则
+
+6. 实用技巧
+6.1 虚拟环境
+- 使用 venv 创建隔离的 Python 环境
+- 使用 requirements.txt 管理依赖
+
+6.2 调试技巧
+- 使用 print() 进行简单调试
+- 使用 pdb 进行交互式调试
+- 使用日志而不是 print
+
+7. 总结
+Python 是一个功能强大且易于学习的编程语言。通过掌握基础语法、函数、类、高级特性和最佳实践，你可以用 Python 构建各种类型的应用程序。记住，编程是一个持续学习的过程，多练习和实践是提高编程技能的关键。

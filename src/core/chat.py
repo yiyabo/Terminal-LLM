@@ -66,7 +66,8 @@ from src.core.commands import (
     ExitCommand,
     ClearCommand,
     HistoryCommand,
-    HelpCommand
+    HelpCommand,
+    vector_store
 )
 from src.ui import (
     console,
@@ -113,7 +114,7 @@ def change_language(lang: str) -> None:
     set_current_language(lang)
     console.print(get_current_language()['language_changed'])
 
-def handle_user_input(user_input: str) -> Optional[bool]:
+async def handle_user_input(user_input: str) -> Optional[bool]:
     """处理用户输入的命令。
 
     测试命令处理系统，包括：
@@ -137,12 +138,12 @@ def handle_user_input(user_input: str) -> Optional[bool]:
     if command is None:
         return None
         
-    # 如果是语言切换命令，需要提取语言代码
-    if isinstance(command, LangCommand):
-        _, lang_code = user_input.split(' ', 1)
-        return command.execute(lang_code)
+    # 获取命令参数
+    command_parts = user_input[1:].split()
+    args = command_parts[1:] if len(command_parts) > 1 else []
         
-    return command.execute()
+    # 执行命令
+    return await command.execute(*args)
 
 async def get_response(session: aiohttp.ClientSession, prompt: str) -> str:
     """异步获取 API 响应。
@@ -164,57 +165,49 @@ async def get_response(session: aiohttp.ClientSession, prompt: str) -> str:
         aiohttp.ClientError: HTTP 客户端错误
         asyncio.TimeoutError: 请求超时
     """
-    # 检查缓存
-    if CACHE_ENABLED:
-        cached_response = response_cache.get_cached_response(prompt)
-        if cached_response:
-            return cached_response
+    async with thinking_spinner():
+        # 从向量存储中检索相关文本
+        relevant_texts = []
+        if vector_store.index.ntotal > 0:  # 如果向量存储不为空
+            results = await vector_store.search(prompt)
+            if results:
+                relevant_texts = [result.content for result in results]
 
-    retry_count = 0
+        # 构建系统提示
+        system_prompt = "你是一个有帮助的 AI 助手。"
+        if relevant_texts:
+            system_prompt += "\n\n相关上下文：\n" + "\n---\n".join(relevant_texts)
 
-    while retry_count < MAX_RETRIES:
+        # 构建请求数据
+        data = {
+            "model": MODEL_NAME,
+            "messages": [
+                {"role": "system", "content": system_prompt},
+                {"role": "user", "content": prompt}
+            ]
+        }
+
+        # 发送请求
         try:
-            with thinking_spinner():
-                # 发送请求
-                async with session.post(
-                    API_URL,
-                    json={
-                        "model": MODEL_NAME,
-                        "messages": [{"role": "user", "content": prompt}]
-                    },
-                    headers={"Authorization": f"Bearer {API_KEY}"},
-                    timeout=REQUEST_TIMEOUT
-                ) as response:
-                    # 检查响应状态
-                    if response.status != 200:
-                        error_msg = f"API returned {response.status}"
-                        print_error(error_msg)
-                        retry_count += 1
-                        if retry_count < MAX_RETRIES:
-                            print_retry(error_msg, retry_count, MAX_RETRIES)
-                            await asyncio.sleep(RETRY_DELAY)
-                        continue
+            async with session.post(
+                API_URL,
+                headers={"Authorization": f"Bearer {API_KEY}"},
+                json=data
+            ) as response:
+                if response.status != 200:
+                    error_data = await response.json()
+                    error_message = error_data.get('error', {}).get('message', '未知错误')
+                    raise Exception(f"API 错误 ({response.status}): {error_message}")
 
-                    # 解析响应
-                    data = await response.json()
-                    result = data['choices'][0]['message']['content']
+                result = await response.json()
+                return result['choices'][0]['message']['content']
 
-                    # 缓存响应
-                    if CACHE_ENABLED:
-                        response_cache.cache_response(prompt, result)
-
-                    return result
-
-        except (aiohttp.ClientError, asyncio.TimeoutError) as e:
-            error_msg = str(e)
-            print_error(error_msg)
-            retry_count += 1
-            if retry_count < MAX_RETRIES:
-                print_retry(error_msg, retry_count, MAX_RETRIES)
-                await asyncio.sleep(RETRY_DELAY)
-            continue
-
-    raise Exception(get_current_language()['timeout'])
+        except aiohttp.ClientError as e:
+            raise Exception(f"网络错误: {str(e)}")
+        except asyncio.TimeoutError:
+            raise Exception("请求超时")
+        except Exception as e:
+            raise Exception(f"发生错误: {str(e)}")
 
 async def main() -> None:
     """主函数。
@@ -250,20 +243,16 @@ async def main() -> None:
                 if not user_input.strip():
                     continue
                 
-                # 处理命令
-                result = handle_user_input(user_input)
-                if result is False:
-                    break
-                elif result is True:
-                    continue
-
-                # 记录开始时间
-                start_time = time.perf_counter()
-
-                # 获取 AI 响应
-                response = await get_response(session, user_input)
+                # 如果是命令（以 / 开头），处理命令
+                if user_input.startswith('/'):
+                    result = await handle_user_input(user_input)
+                    if result is False:
+                        return  # 退出程序
+                    continue  # 继续下一次循环
                 
-                # 计算耗时
+                # 如果不是命令，发送给 AI
+                start_time = time.perf_counter()
+                response = await get_response(session, user_input)
                 elapsed_time = time.perf_counter() - start_time
                 
                 # 添加到历史记录
@@ -278,7 +267,7 @@ async def main() -> None:
                     await asyncio.sleep(1)
                 except KeyboardInterrupt:
                     console.print(f"\n[bold yellow]{get_current_language()['exit_message']}[/bold yellow]")
-                    break
+                    return  # 退出程序
             except Exception as e:
                 logging.error(f"发生错误: {str(e)}")
                 print_error(str(e))
