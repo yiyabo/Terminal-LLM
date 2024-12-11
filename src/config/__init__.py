@@ -13,6 +13,7 @@ from .config import (
     CACHE_ENABLED,
     CACHE_FILE,
     HISTORY_FILE,
+    MAX_HISTORY_ITEMS,
     LOG_FILE,
     get_current_language,
     set_current_language,

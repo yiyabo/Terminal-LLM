@@ -25,6 +25,7 @@ import os
 from typing import List, Dict, Optional
 import hashlib
 import re
+from src.config import MAX_HISTORY_ITEMS
 
 class ChatHistory:
     """对话历史管理类。
@@ -76,6 +77,11 @@ class ChatHistory:
             'user': user_input,
             'assistant': response
         })
+        
+        # 如果超过最大记录数，删除最旧的记录
+        if len(self.history) > MAX_HISTORY_ITEMS:
+            self.history = self.history[-MAX_HISTORY_ITEMS:]
+        
         self._save_history()
 
     def _save_history(self):

@@ -4,13 +4,7 @@
 """
 
 from .chat import main as chat_main
-from .shell_ai import ShellAI
-from .commands import (
-    CommandFactory,
-    LangCommand,
-    ExitCommand,
-    ClearCommand,
-    HistoryCommand,
-    HelpCommand
-)
-from .utils import ChatHistory, ResponseCache
+from .commands import CommandFactory, Command
+from .utils import ChatHistory
+
+__all__ = ['chat_main', 'CommandFactory', 'Command', 'ChatHistory']

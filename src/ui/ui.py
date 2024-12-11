@@ -13,6 +13,7 @@ from dataclasses import dataclass
 from typing import List, Optional
 
 from rich.align import Align
+from rich.box import DOUBLE
 from rich.console import Console
 from rich.live import Live
 from rich.panel import Panel
@@ -27,7 +28,7 @@ from rich.spinner import Spinner
 from rich.table import Table
 from rich.text import Text
 
-from src.config import COMMANDS, get_current_language
+from src.config import COMMANDS, get_current_language, MODEL_NAME
 from src.core.utils import format_bold_text
 
 # 创建控制台对象
@@ -72,7 +73,7 @@ def create_panel(
     # Create panel
     panel = Panel(
         formatted_response,
-        title="Assistant",
+        title=MODEL_NAME,
         title_align="left",
         border_style=border_style,
         width=width,
@@ -124,6 +125,15 @@ class ThinkingSpinner:
             self.spinner, console=console, refresh_per_second=10, transient=True
         )
 
+    async def __aenter__(self):
+        """Enter thinking spinner context."""
+        self.live.start()
+        return self
+
+    async def __aexit__(self, exc_type, exc_val, exc_tb):
+        """Exit thinking spinner context."""
+        self.live.stop()
+
     def __enter__(self):
         """Enter thinking spinner context."""
         self.live.start()
@@ -145,9 +155,29 @@ def thinking_spinner():
 
 def print_welcome():
     """打印欢迎信息。"""
-    welcome_text = get_current_language()["welcome"]
-    panel = Panel(Align.center(welcome_text), style="bold green")
+    # 创建一个居中对齐的富文本
+    text = Text()
+    text.append("✨ ", style="bright_yellow")
+    text.append(get_current_language()["welcome"], style="bold bright_white")
+    text.append(" ✨", style="bright_yellow")
+    
+    # 将文本居中对齐
+    aligned_text = Align.center(text)
+    
+    # 创建面板，使用渐变边框颜色
+    panel = Panel(
+        aligned_text,
+        border_style="yellow",
+        box=DOUBLE,
+        padding=(1, 2),
+        title="🌟 Terminal-LLM",
+        title_align="center"
+    )
+    
+    # 打印面板
+    console.print("\n")  # 添加一个空行
     console.print(panel)
+    console.print("\n")  # 添加一个空行
 
 
 def print_response(response: str, elapsed_time: float):
@@ -162,7 +192,7 @@ def print_response(response: str, elapsed_time: float):
 
     # 创建面板
     panel = Panel(
-        formatted_response, title="Assistant", title_align="left", border_style="green"
+        formatted_response, title=MODEL_NAME, title_align="left", border_style="green"
     )
 
     # 打印响应和耗时
