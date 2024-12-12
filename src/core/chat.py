@@ -1,7 +1,7 @@
-"""ChatGLM 终端应用程序测试模块。
+"""终端应用程序测试模块。
 
-此模块是 ChatGLM 终端应用程序的测试版本，用于验证和测试核心功能：
-1. 异步通信：测试与 ChatGLM API 的异步交互
+此模块是 Terminal-LLM 终端应用程序的测试版本，用于验证和测试核心功能：
+1. 异步通信：测试与 API 的异步交互
 2. 缓存机制：验证响应缓存的正确性
 3. 历史记录：测试聊天历史的保存和加载
 4. 错误处理：测试各种错误情况的处理逻辑
@@ -34,49 +34,49 @@
 
 #!/usr/bin/env python
 import asyncio
-import aiohttp
-import time
 import logging
+import time
 from typing import Optional
+
+import aiohttp
 from prompt_toolkit import PromptSession
 from prompt_toolkit.completion import WordCompleter
-from prompt_toolkit.history import InMemoryHistory
 from prompt_toolkit.formatted_text import HTML
+from prompt_toolkit.history import InMemoryHistory
 
 from src.config import (
-    LANGUAGES,
-    COMMANDS,
     API_KEY,
     API_URL,
-    MODEL_NAME,
-    MAX_RETRIES,
-    RETRY_DELAY,
-    REQUEST_TIMEOUT,
     CACHE_ENABLED,
     CACHE_FILE,
+    COMMANDS,
     HISTORY_FILE,
     LOG_FILE,
+    MAX_RETRIES,
+    MODEL_NAME,
+    REQUEST_TIMEOUT,
+    RETRY_DELAY,
     get_current_language,
-    set_current_language
+    set_current_language,
+)
+from src.core.commands import (
+    ClearCommand,
+    CommandFactory,
+    ExitCommand,
+    HelpCommand,
+    HistoryCommand,
+    LangCommand,
+    vector_store,
 )
 from src.core.utils import ChatHistory, ResponseCache
-from src.core.commands import (
-    CommandFactory,
-    LangCommand,
-    ExitCommand,
-    ClearCommand,
-    HistoryCommand,
-    HelpCommand,
-    vector_store
-)
 from src.ui import (
     console,
-    thinking_spinner,
-    print_welcome,
-    print_response,
     print_error,
+    print_help,
+    print_response,
     print_retry,
-    print_help
+    print_welcome,
+    thinking_spinner,
 )
 
 # 初始化全局变量
@@ -86,19 +86,18 @@ response_cache = ResponseCache(CACHE_FILE)
 # 初始化日志记录
 logging.basicConfig(
     level=logging.INFO,
-    format='%(asctime)s - %(levelname)s - %(message)s',
-    handlers=[
-        logging.FileHandler('chat.log'),
-        logging.StreamHandler()
-    ]
+    format="%(asctime)s - %(levelname)s - %(message)s",
+    handlers=[logging.FileHandler(LOG_FILE), logging.StreamHandler()],
 )
 
 command_completer = WordCompleter(list(COMMANDS.keys()), ignore_case=True)
 prompt_session = PromptSession(history=InMemoryHistory())
 
+
 def print_welcome_message() -> None:
     """打印欢迎信息。"""
     print_welcome()
+
 
 def change_language(lang: str) -> None:
     """切换界面语言。
@@ -107,12 +106,13 @@ def change_language(lang: str) -> None:
 
     参数：
         lang (str): 语言代码，支持 'en' 和 'zh'
-        
+
     异常：
         KeyError: 当语言代码不受支持时抛出
     """
     set_current_language(lang)
-    console.print(get_current_language()['language_changed'])
+    console.print(get_current_language()["language_changed"])
+
 
 async def handle_user_input(user_input: str) -> Optional[bool]:
     """处理用户输入的命令。
@@ -128,7 +128,7 @@ async def handle_user_input(user_input: str) -> Optional[bool]:
         user_input (str): 用户输入的命令
 
     返回：
-        Optional[bool]: 
+        Optional[bool]:
         - False: 用户要求退出程序
         - True: 命令已处理完成（如清屏、显示历史等）
         - None: 输入的是普通文本，需要发送到 API 处理
@@ -137,13 +137,14 @@ async def handle_user_input(user_input: str) -> Optional[bool]:
     command = CommandFactory.get_command(user_input)
     if command is None:
         return None
-        
+
     # 获取命令参数
     command_parts = user_input[1:].split()
     args = command_parts[1:] if len(command_parts) > 1 else []
-        
+
     # 执行命令
     return await command.execute(*args)
+
 
 async def get_response(session: aiohttp.ClientSession, prompt: str) -> str:
     """异步获取 API 响应。
@@ -183,24 +184,22 @@ async def get_response(session: aiohttp.ClientSession, prompt: str) -> str:
             "model": MODEL_NAME,
             "messages": [
                 {"role": "system", "content": system_prompt},
-                {"role": "user", "content": prompt}
-            ]
+                {"role": "user", "content": prompt},
+            ],
         }
 
         # 发送请求
         try:
             async with session.post(
-                API_URL,
-                headers={"Authorization": f"Bearer {API_KEY}"},
-                json=data
+                API_URL, headers={"Authorization": f"Bearer {API_KEY}"}, json=data
             ) as response:
                 if response.status != 200:
                     error_data = await response.json()
-                    error_message = error_data.get('error', {}).get('message', '未知错误')
+                    error_message = error_data.get("error", {}).get("message", "未知错误")
                     raise Exception(f"API 错误 ({response.status}): {error_message}")
 
                 result = await response.json()
-                return result['choices'][0]['message']['content']
+                return result["choices"][0]["message"]["content"]
 
         except aiohttp.ClientError as e:
             raise Exception(f"网络错误: {str(e)}")
@@ -208,6 +207,7 @@ async def get_response(session: aiohttp.ClientSession, prompt: str) -> str:
             raise Exception("请求超时")
         except Exception as e:
             raise Exception(f"发生错误: {str(e)}")
+
 
 async def main() -> None:
     """主函数。
@@ -225,7 +225,7 @@ async def main() -> None:
     """
     print_welcome_message()
     print_help()
-    
+
     async with aiohttp.ClientSession() as session:
         while True:
             try:
@@ -233,44 +233,47 @@ async def main() -> None:
                 user_input = await asyncio.get_event_loop().run_in_executor(
                     None,
                     lambda: prompt_session.prompt(
-                        HTML('\n<ansgreen><b>🔎 User: </b></ansgreen>'),
+                        HTML("\n<ansgreen><b>🔎 User: </b></ansgreen>"),
                         completer=command_completer,
-                        complete_while_typing=True
-                    )
+                        complete_while_typing=True,
+                    ),
                 )
-                
+
                 # 处理空输入
                 if not user_input.strip():
                     continue
-                
+
                 # 如果是命令（以 / 开头），处理命令
-                if user_input.startswith('/'):
+                if user_input.startswith("/"):
                     result = await handle_user_input(user_input)
                     if result is False:
                         return  # 退出程序
                     continue  # 继续下一次循环
-                
+
                 # 如果不是命令，发送给 AI
                 start_time = time.perf_counter()
                 response = await get_response(session, user_input)
                 elapsed_time = time.perf_counter() - start_time
-                
+
                 # 添加到历史记录
                 chat_history.add_interaction(user_input, response)
-                
+
                 # 打印响应
                 print_response(response, elapsed_time)
-                
+
             except KeyboardInterrupt:
                 console.print("\n[yellow]按 Ctrl+C 再次退出程序[/yellow]")
                 try:
                     await asyncio.sleep(1)
                 except KeyboardInterrupt:
-                    console.print(f"\n[bold yellow]{get_current_language()['exit_message']}[/bold yellow]")
+                    console.print(
+                        f"\n[bold yellow]{get_current_language()['exit_message']}[/bold yellow]"
+                    )
                     return  # 退出程序
             except Exception as e:
                 logging.error(f"发生错误: {str(e)}")
                 print_error(str(e))
+
 
 if __name__ == "__main__":
     asyncio.run(main())

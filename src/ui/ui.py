@@ -1,4 +1,4 @@
-"""ChatGLM UI 模块。
+""" UI 模块。
 
 此模块提供了终端用户界面相关的功能，包括：
 1. 进度条显示
@@ -28,7 +28,7 @@ from rich.spinner import Spinner
 from rich.table import Table
 from rich.text import Text
 
-from src.config import COMMANDS, get_current_language, MODEL_NAME
+from src.config import COMMANDS, MODEL_NAME, get_current_language
 from src.core.utils import format_bold_text
 
 # 创建控制台对象
@@ -160,10 +160,10 @@ def print_welcome():
     text.append("✨ ", style="bright_yellow")
     text.append(get_current_language()["welcome"], style="bold bright_white")
     text.append(" ✨", style="bright_yellow")
-    
+
     # 将文本居中对齐
     aligned_text = Align.center(text)
-    
+
     # 创建面板，使用渐变边框颜色
     panel = Panel(
         aligned_text,
@@ -171,9 +171,9 @@ def print_welcome():
         box=DOUBLE,
         padding=(1, 2),
         title="🌟 Terminal-LLM",
-        title_align="center"
+        title_align="center",
     )
-    
+
     # 打印面板
     console.print("\n")  # 添加一个空行
     console.print(panel)

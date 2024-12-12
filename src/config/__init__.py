@@ -6,18 +6,16 @@
 from .config import (
     API_KEY,
     API_URL,
-    MODEL_NAME,
-    MAX_RETRIES,
-    RETRY_DELAY,
-    REQUEST_TIMEOUT,
     CACHE_ENABLED,
     CACHE_FILE,
+    COMMANDS,
     HISTORY_FILE,
-    MAX_HISTORY_ITEMS,
     LOG_FILE,
+    MAX_HISTORY_ITEMS,
+    MAX_RETRIES,
+    MODEL_NAME,
+    REQUEST_TIMEOUT,
+    RETRY_DELAY,
     get_current_language,
     set_current_language,
-    COMMANDS
 )
-
-from .languages import LANGUAGES

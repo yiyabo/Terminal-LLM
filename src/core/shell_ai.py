@@ -8,7 +8,7 @@
 5. 错误处理：优雅地处理各种异常情况
 
 主要特点：
-- 使用 ChatGLM API 进行自然语言处理
+- 使用 API 进行自然语言处理
 - 支持命令编辑和确认机制
 - 保存命令历史到用户主目录
 - 美化的终端界面
@@ -38,19 +38,23 @@
 日期：2024-12-10
 """
 
+import asyncio
+
 #!/usr/bin/env python
 import os
 import sys
-import asyncio
+from typing import Optional
+
 import aiohttp
 from prompt_toolkit import PromptSession
 from prompt_toolkit.history import FileHistory
 from rich.console import Console
 from rich.panel import Panel
-from typing import Optional
+
 from src.config import API_KEY, API_URL, MODEL_NAME, REQUEST_TIMEOUT
 
 console = Console()
+
 
 class ShellAI:
     """Shell AI 命令转换器类。
@@ -73,15 +77,13 @@ class ShellAI:
         设置历史文件路径和创建 prompt_toolkit 会话。
         历史文件保存在用户主目录下。
         """
-        self.history_file = os.path.expanduser('~/.shell_ai_history')
-        self.session = PromptSession(
-            history=FileHistory(self.history_file)
-        )
-        
+        self.history_file = os.path.expanduser("~/.shell_ai_history")
+        self.session = PromptSession(history=FileHistory(self.history_file))
+
     async def get_llm_response(self, prompt: str) -> str:
         """获取 LLM API 响应。
 
-        向 ChatGLM API 发送请求并获取响应。
+        向 API 发送请求并获取响应。
 
         参数：
             prompt (str): 要发送给 API 的提示文本
@@ -94,23 +96,20 @@ class ShellAI:
         """
         headers = {
             "Content-Type": "application/json",
-            "Authorization": f"Bearer {API_KEY}"
+            "Authorization": f"Bearer {API_KEY}",
         }
         payload = {
             "model": MODEL_NAME,
-            "messages": [
-                {"role": "user", "content": prompt}
-            ]
+            "messages": [{"role": "user", "content": prompt}],
         }
-        
+
         async with aiohttp.ClientSession() as session:
-            async with session.post(API_URL, 
-                                headers=headers, 
-                                json=payload,
-                                timeout=REQUEST_TIMEOUT) as response:
+            async with session.post(
+                API_URL, headers=headers, json=payload, timeout=REQUEST_TIMEOUT
+            ) as response:
                 if response.status == 200:
                     response_data = await response.json()
-                    return response_data['choices'][0]['message']['content']
+                    return response_data["choices"][0]["message"]["content"]
                 else:
                     raise Exception(f"API error: {response.status}")
 
@@ -129,7 +128,7 @@ class ShellAI:
         prompt = f"""
         请将以下自然语言请求转换为对应的shell命令：
         '{user_input}'
-        
+
         要求：
         1. 只返回具体的命令，不要包含任何解释或其他文字
         2. 确保命令是安全的
@@ -139,15 +138,15 @@ class ShellAI:
         6. 对于查找特定类型文件的需求，结合 find 和 grep 命令
         7. 优先使用通用的 Unix/Linux 命令
         8. 如果涉及到目录切换，确保使用正确的相对或绝对路径
-        
+
         示例输入和输出：
         输入：'帮我找出最大的文件'
         输出：'ls -lhS | head -n 5'
-        
+
         输入：'显示所有的 Python 文件'
         输出：'find . -name "*.py"'
         """
-        
+
         try:
             command = await self.get_llm_response(prompt)
             return command.strip()
@@ -168,11 +167,13 @@ class ShellAI:
         """
         console.print(Panel(f"[yellow]Suggested command:[/yellow] {command}"))
         response = await self.session.prompt_async("Execute this command? (y/n/edit): ")
-        
-        if response.lower() == 'y':
+
+        if response.lower() == "y":
             return command
-        elif response.lower() == 'edit':
-            edited_command = await self.session.prompt_async("Edit command: ", default=command)
+        elif response.lower() == "edit":
+            edited_command = await self.session.prompt_async(
+                "Edit command: ", default=command
+            )
             return edited_command
         return None
 
@@ -193,27 +194,27 @@ class ShellAI:
         """
         try:
             # 对特殊命令进行处理
-            if command.strip() == 'clear':
+            if command.strip() == "clear":
                 console.clear()
                 return 0
-                
+
             process = await asyncio.create_subprocess_shell(
                 command,
                 stdout=asyncio.subprocess.PIPE,
                 stderr=asyncio.subprocess.PIPE,
                 shell=True,  # 确保在shell环境中执行
-                executable='/bin/bash'  # 使用bash作为shell
+                executable="/bin/bash",  # 使用bash作为shell
             )
             stdout, stderr = await process.communicate()
-            
+
             if stdout:
                 # 处理输出中的控制字符
                 output = stdout.decode()
-                if not any(control in output for control in ['[H', '[2J', '[3J']):
+                if not any(control in output for control in ["[H", "[2J", "[3J"]):
                     console.print(output.rstrip())
             if stderr:
                 console.print(f"[red]{stderr.decode().rstrip()}[/red]")
-                
+
             return process.returncode
         except Exception as e:
             console.print(f"[red]Error executing command: {e}[/red]")
@@ -235,37 +236,42 @@ class ShellAI:
             EOFError: 用户退出（Ctrl+D）
             Exception: 其他未预期的错误
         """
-        console.print("[bold cyan]✨ Welcome to Shell AI - Your Natural Language Shell Assistant ✨[/bold cyan]")
+        console.print(
+            "[bold cyan]✨ Welcome to Shell AI - Your Natural Language Shell Assistant ✨[/bold cyan]"
+        )
         console.print("[green]Type 'exit' to quit, 'clear' to clear screen[/green]")
-        
+
         while True:
             try:
                 # 获取用户输入
                 user_input = await self.session.prompt_async("🤖 > ")
-                
+
                 # 处理退出命令
-                if user_input.lower() in ['exit', 'quit']:
+                if user_input.lower() in ["exit", "quit"]:
                     console.print("[yellow]Goodbye! 👋[/yellow]")
                     break
-                elif user_input.lower() == 'clear':
+                elif user_input.lower() == "clear":
                     console.clear()
                     continue
-                
+
                 # 处理自然语言输入
                 command = await self.process_natural_language(user_input)
-                if command and command != 'UNABLE_TO_CONVERT':
+                if command and command != "UNABLE_TO_CONVERT":
                     confirmed_command = await self.prompt_for_confirmation(command)
                     if confirmed_command:
                         await self.execute_command(confirmed_command)
                 else:
-                    console.print("[red]Sorry, I couldn't convert that to a command.[/red]")
-                    
+                    console.print(
+                        "[red]Sorry, I couldn't convert that to a command.[/red]"
+                    )
+
             except KeyboardInterrupt:
                 continue
             except EOFError:
                 break
             except Exception as e:
                 console.print(f"[red]Error: {e}[/red]")
+
 
 def main() -> None:
     """程序入口函数。
@@ -282,6 +288,7 @@ def main() -> None:
     except Exception as e:
         console.print(f"[red]Fatal error: {e}[/red]")
         sys.exit(1)
+
 
 if __name__ == "__main__":
     main()
