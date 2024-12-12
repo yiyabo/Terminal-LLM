@@ -1,6 +1,6 @@
-"""ChatGLM 工具模块。
+"""工具模块。
 
-此模块提供了与 ChatGLM 对话系统相关的工具类和辅助函数，主要包含以下功能：
+此模块提供了与 Terminal-LLM 对话系统相关的工具类和辅助函数，主要包含以下功能：
 1. 对话历史管理：记录、保存和加载用户与 AI 的对话历史
 2. 响应缓存管理：缓存 AI 的响应，提高系统响应速度
 3. 文本格式化：支持 Markdown 风格的文本格式化
@@ -20,12 +20,14 @@
 日期：2024-12-10
 """
 
+import hashlib
 import json
 import os
-from typing import List, Dict, Optional
-import hashlib
 import re
+from typing import Dict, List, Optional
+
 from src.config import MAX_HISTORY_ITEMS
+
 
 class ChatHistory:
     """对话历史管理类。
@@ -60,7 +62,7 @@ class ChatHistory:
         """
         if os.path.exists(self.history_file):
             try:
-                with open(self.history_file, 'r', encoding='utf-8') as f:
+                with open(self.history_file, "r", encoding="utf-8") as f:
                     return json.load(f)
             except json.JSONDecodeError:
                 return []
@@ -73,20 +75,17 @@ class ChatHistory:
             user_input (str): 用户的输入内容
             response (str): AI 的响应内容
         """
-        self.history.append({
-            'user': user_input,
-            'assistant': response
-        })
-        
+        self.history.append({"user": user_input, "assistant": response})
+
         # 如果超过最大记录数，删除最旧的记录
         if len(self.history) > MAX_HISTORY_ITEMS:
             self.history = self.history[-MAX_HISTORY_ITEMS:]
-        
+
         self._save_history()
 
     def _save_history(self):
         """将历史记录保存到文件。"""
-        with open(self.history_file, 'w', encoding='utf-8') as f:
+        with open(self.history_file, "w", encoding="utf-8") as f:
             json.dump(self.history, f, ensure_ascii=False, indent=2)
 
     def get_recent_history(self, n: int = 5) -> List[Dict]:
@@ -104,6 +103,7 @@ class ChatHistory:
         """清空所有对话历史。"""
         self.history = []
         self._save_history()
+
 
 class ResponseCache:
     """响应缓存管理类。
@@ -140,7 +140,7 @@ class ResponseCache:
         """
         if os.path.exists(self.cache_file):
             try:
-                with open(self.cache_file, 'r', encoding='utf-8') as f:
+                with open(self.cache_file, "r", encoding="utf-8") as f:
                     return json.load(f)
             except json.JSONDecodeError:
                 return {}
@@ -148,7 +148,7 @@ class ResponseCache:
 
     def _save_cache(self):
         """将缓存保存到文件。"""
-        with open(self.cache_file, 'w', encoding='utf-8') as f:
+        with open(self.cache_file, "w", encoding="utf-8") as f:
             json.dump(self.cache, f, ensure_ascii=False, indent=2)
 
     def _get_cache_key(self, prompt: str) -> str:
@@ -187,6 +187,7 @@ class ResponseCache:
         self.cache[cache_key] = response
         self._save_cache()
 
+
 def format_bold_text(text: str) -> str:
     """格式化文本，支持 Markdown 风格的加粗和列表。
 
@@ -200,45 +201,60 @@ def format_bold_text(text: str) -> str:
         str: 格式化后的文本
     """
     # 处理标题（以 # 开头的行）
-    text = re.sub(r'^#\s+(.+)$', r'[bold magenta]\1[/bold magenta]', text, flags=re.MULTILINE)
-    
+    text = re.sub(
+        r"^#\s+(.+)$", r"[bold magenta]\1[/bold magenta]", text, flags=re.MULTILINE
+    )
+
     # 处理数字列表项的加粗标题
-    text = re.sub(r'^(\d+\.)\s+\*\*([^*]+)\*\*', r'\1 [bold cyan]\2[/bold cyan]', text, flags=re.MULTILINE)
-    
+    text = re.sub(
+        r"^(\d+\.)\s+\*\*([^*]+)\*\*",
+        r"\1 [bold cyan]\2[/bold cyan]",
+        text,
+        flags=re.MULTILINE,
+    )
+
     # 处理其他加粗文本
-    text = re.sub(r'\*\*([^*]+)\*\*', r'[bold cyan]\1[/bold cyan]', text)
-    
+    text = re.sub(r"\*\*([^*]+)\*\*", r"[bold cyan]\1[/bold cyan]", text)
+
     # 处理列表项（以 - 或 • 开头的行）
-    text = re.sub(r'^\s*[-•]\s*(.+)$', r'  [cyan]•[/cyan] \1', text, flags=re.MULTILINE)
-    
+    text = re.sub(r"^\s*[-•]\s*(.+)$", r"  [cyan]•[/cyan] \1", text, flags=re.MULTILINE)
+
     # 处理子列表项（缩进的列表项）
-    text = re.sub(r'^\s{4,}[-•]\s*(.+)$', r'    [dim cyan]○[/dim cyan] \1', text, flags=re.MULTILINE)
-    
+    text = re.sub(
+        r"^\s{4,}[-•]\s*(.+)$",
+        r"    [dim cyan]○[/dim cyan] \1",
+        text,
+        flags=re.MULTILINE,
+    )
+
     # 处理引用文本
-    text = re.sub(r'^\s*>\s+(.+)$', r'[dim italic]\1[/dim italic]', text, flags=re.MULTILINE)
-    
+    text = re.sub(
+        r"^\s*>\s+(.+)$", r"[dim italic]\1[/dim italic]", text, flags=re.MULTILINE
+    )
+
     # 处理行内代码
-    text = re.sub(r'`([^`]+)`', r'[bold yellow]\1[/bold yellow]', text)
-    
+    text = re.sub(r"`([^`]+)`", r"[bold yellow]\1[/bold yellow]", text)
+
     # 处理斜体文本
-    text = re.sub(r'\*([^*]+)\*', r'[italic]\1[/italic]', text)
-    
+    text = re.sub(r"\*([^*]+)\*", r"[italic]\1[/italic]", text)
+
     # 处理长句子的自动换行和对齐
-    lines = text.split('\n')
+    lines = text.split("\n")
     formatted_lines = []
     for line in lines:
         if len(line.strip()) > 80:  # 如果行长度超过80个字符
             # 保持缩进，将文本按照标点符号分割成多行
-            indent = re.match(r'^\s*', line).group()
+            indent = len(line) - len(line.lstrip())
+            indent = " " * indent
             content = line.strip()
-            parts = re.split(r'([。，；：])', content)
+            parts = re.split(r"([。，；：])", content)
             new_line = indent
-            for i in range(0, len(parts)-1, 2):
-                new_line += parts[i] + parts[i+1] + '\n' + indent
+            for i in range(0, len(parts) - 1, 2):
+                new_line += parts[i] + parts[i + 1] + "\n" + indent
             if len(parts) % 2 == 1:
                 new_line += parts[-1]
             formatted_lines.append(new_line.rstrip())
         else:
             formatted_lines.append(line)
-    
-    return '\n'.join(formatted_lines)
+
+    return "\n".join(formatted_lines)
