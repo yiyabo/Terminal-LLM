@@ -39,6 +39,7 @@
 """
 
 import asyncio
+import json
 import os
 import subprocess
 import sys
@@ -83,16 +84,16 @@ class ShellAI:
     async def get_llm_response(self, prompt: str) -> str:
         """获取 LLM API 响应。
 
-        向 API 发送请求并获取响应。
+        向 API 发送请求并获取流式响应。
 
         参数：
             prompt (str): 要发送给 API 的提示文本
 
         返回：
-            str: API 的响应文本
+            str: API 的完整响应文本
 
         异常：
-            Exception: API 调用失败时抛出
+            APIError: API 调用失败时抛出
         """
         headers = {
             "Content-Type": "application/json",
@@ -101,17 +102,36 @@ class ShellAI:
         payload = {
             "model": MODEL_NAME,
             "messages": [{"role": "user", "content": prompt}],
+            "stream": True,  # 启用流式响应
         }
 
+        full_response = ""
         async with aiohttp.ClientSession() as session:
             async with session.post(
                 API_URL, headers=headers, json=payload, timeout=REQUEST_TIMEOUT
             ) as response:
-                if response.status == 200:
-                    response_data = await response.json()
-                    return response_data["choices"][0]["message"]["content"]
-                else:
+                if response.status != 200:
                     raise APIError(f"API error: {response.status}")
+                
+                # 处理流式响应
+                async for line in response.content:
+                    if line:
+                        try:
+                            line_text = line.decode('utf-8').strip()
+                            if line_text.startswith('data: '):
+                                data = json.loads(line_text[6:])  # 去掉 'data: ' 前缀
+                                if data['choices'][0]['finish_reason'] is not None:
+                                    break
+                                content = data['choices'][0]['delta'].get('content', '')
+                                if content:
+                                    full_response += content
+                                    # 实时显示内容
+                                    console.print(content, end='', highlight=False)
+                        except json.JSONDecodeError:
+                            continue
+
+        console.print()  # 添加换行
+        return full_response
 
     async def process_natural_language(self, user_input: str) -> Optional[str]:
         """处理自然语言输入并转换为命令。
@@ -120,7 +140,7 @@ class ShellAI:
         包含详细的转换规则和安全检查。
 
         参数：
-            user_input (str): 用户的���然语言输入
+            user_input (str): 用户的自然语言输入
 
         返回：
             Optional[str]: 转换后的 Shell 命令，如果转换失败则返回 None
@@ -133,7 +153,7 @@ class ShellAI:
         1. 只返回具体的命令，不要包含任何解释或其他文字
         2. 确保命令是安全的
         3. 如果需要多个命令，用分号分隔
-        4. 如果无法转换或不确定，返回 'UNABLE_TO_CONVERT'
+        4. 如果无法转换或不确定，��回 'UNABLE_TO_CONVERT'
         5. 对于查找最大文件的需求，使用 ls -lhS 或 du -sh * 等命令
         6. 对于查找特定类型文件的需求，结合 find 和 grep 命令
         7. 优先使用通用的 Unix/Linux 命令
@@ -228,7 +248,7 @@ class ShellAI:
         2. 获取用户输入
         3. 处理特殊命令（exit、clear）
         4. 转换自然语言为命令
-        5. 确认和执行命���
+        5. 确认和执行命令
         6. 错误处理
 
         异常：

@@ -10,8 +10,13 @@ import faiss
 from typing import List, Dict, Optional
 from dataclasses import dataclass, asdict
 from sentence_transformers import SentenceTransformer
+from rich.console import Console
+import torch
 
 from .document import TextChunk
+
+# 创建控制台对象
+console = Console()
 
 @dataclass
 class SearchResult:
@@ -23,6 +28,8 @@ class SearchResult:
 class VectorStore:
     """向量存储类"""
 
+    MODEL_NAME = 'all-MiniLM-L6-v2'
+
     def __init__(self, dimension: int = 384):  # all-MiniLM-L6-v2 模型的维度是 384
         """初始化向量存储
 
@@ -33,7 +40,37 @@ class VectorStore:
         self.index = faiss.IndexFlatL2(dimension)  # 使用 L2 距离的 FAISS 索引
         self.chunks: List[TextChunk] = []
         self.embeddings: List[np.ndarray] = []
-        self.model = SentenceTransformer('all-MiniLM-L6-v2')  # 一个轻量级但效果不错的模型
+        self._model = None  # 延迟初始化模型
+
+    def _is_model_downloaded(self) -> bool:
+        """检查模型是否已下载"""
+        try:
+            # 尝试加载模型配置，这不会下载模型
+            SentenceTransformer(self.MODEL_NAME, device='cpu')
+            return True
+        except Exception:
+            return False
+
+    @property
+    def model(self):
+        """延迟加载模型"""
+        if self._model is None:
+            # 检查模型是否需要下载
+            if not self._is_model_downloaded():
+                console.print("\n[yellow]首次使用知识库功能，正在下载必要的 AI 模型（约 100MB），请稍候...[/yellow]")
+                self._model = SentenceTransformer(self.MODEL_NAME)
+                console.print("[green]模型下载完成！[/green]\n")
+            else:
+                # 模型已存在，直接加载
+                self._model = SentenceTransformer(self.MODEL_NAME)
+                
+            # 设置设备
+            if torch.backends.mps.is_available():
+                self._model = self._model.to('mps')
+            elif torch.cuda.is_available():
+                self._model = self._model.to('cuda')
+                
+        return self._model
 
     async def get_embeddings(self, texts: List[str]) -> Optional[List[List[float]]]:
         """获取文本的 embedding 向量
@@ -49,7 +86,7 @@ class VectorStore:
             embeddings = self.model.encode(texts, show_progress_bar=False)
             return embeddings.tolist()
         except Exception as e:
-            print(f"Error getting embeddings: {e}")
+            console.print(f"[red]Error getting embeddings: {e}[/red]")
             return None
 
     async def add_texts(self, chunks: List[TextChunk]) -> bool:
@@ -149,7 +186,7 @@ class VectorStore:
 
             return True
         except Exception as e:
-            print(f"Error loading vector store: {e}")
+            console.print(f"[red]Error loading vector store: {e}[/red]")
             return False
 
     def clear(self):

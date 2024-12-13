@@ -1,20 +1,22 @@
-""" UI 模块。
+"""UI 模块。
 
 此模块提供了终端用户界面相关的功能，包括：
-1. 进度条显示
-2. 格式化输出
-3. 动画效果
+1. 面板显示：StreamingPanel, MessagePanel
+2. 动画效果：进度条、加载动画
+3. 状态提示：错误、重试、帮助信息
 
 作者：Yiyabo!
 日期：2024-12-10
 """
 
+import time
+import math
 from dataclasses import dataclass
-from typing import List, Optional
+from typing import List
 
 from rich.align import Align
 from rich.box import DOUBLE
-from rich.console import Console
+from rich.console import Console, Group
 from rich.live import Live
 from rich.panel import Panel
 from rich.progress import (
@@ -27,6 +29,7 @@ from rich.progress import (
 from rich.spinner import Spinner
 from rich.table import Table
 from rich.text import Text
+from rich.style import Style
 
 from src.config import COMMANDS, MODEL_NAME, get_current_language
 from src.core.utils import format_bold_text
@@ -35,71 +38,155 @@ from src.core.utils import format_bold_text
 console = Console()
 
 
+# ===== 基础消息类 =====
 @dataclass
 class Message:
-    """Message data structure."""
-
+    """消息数据结构"""
     role: str
     content: str
 
 
 class ChatHistory:
-    """Chat history management class."""
+    """聊天历史管理类"""
 
     def __init__(self):
-        """Initialize chat history."""
+        """初始化聊天历史"""
         self.messages: List[Message] = []
 
     def add_message(self, role: str, content: str) -> None:
-        """Add a message to the chat history."""
+        """添加消息"""
         self.messages.append(Message(role=role, content=content))
 
     def get_messages(self) -> List[Message]:
-        """Get all messages in the chat history."""
+        """获取所有消息"""
         return self.messages
 
 
-def format_message(message: str) -> Text:
-    """Format a message for display."""
-    return Text(message)
+# ===== 面板组件 =====
+class StreamingPanel:
+    """流式响应面板类"""
+
+    def __init__(self):
+        """初始化流式响应面板"""
+        self.panel_style = Style(color="green", bold=True)
+        self.text_style = Style(color="white")
+        self.full_response = ""
+        self.is_thinking = True
+        self.start_time = time.time()
+        
+        # 进度条配置
+        self.progress_chars = ["█", "▉", "▊", "▋", "▌", "▍", "▎", "▏"]
+        self.bar_width = 20
+        
+        self.live = Live(
+            self._get_panel(),
+            refresh_per_second=15,
+            auto_refresh=True
+        )
+
+    def _get_progress_bar(self, elapsed: float) -> Text:
+        """生成动画进度条"""
+        # 使用余弦函数使动画更平滑
+        pos = int((self.bar_width + 8) * (1 + math.cos(elapsed * 3)) / 2)
+        
+        # 创建进度条
+        bar = ["░"] * self.bar_width
+        
+        # 添加动画效果
+        for i in range(8):
+            pos_idx = pos - i
+            if 0 <= pos_idx < self.bar_width:
+                bar[pos_idx] = self.progress_chars[i]
+        
+        return Text("".join(bar), style="bright_green")
+
+    def _get_panel(self) -> Panel:
+        """获取当前面板"""
+        # 格式化文本
+        formatted_text = format_bold_text(self.full_response)
+        
+        # 如果正在生成，添加进度条
+        if self.is_thinking:
+            elapsed = time.time() - self.start_time
+            content = Group(
+                formatted_text,
+                Text("", end="") if not formatted_text else Text("\n"),
+                self._get_progress_bar(elapsed)
+            )
+        else:
+            content = formatted_text
+        
+        return Panel(
+            content,
+            title=f"🤖 {MODEL_NAME}",
+            title_align="left",
+            border_style=self.panel_style,
+            padding=(1, 2),
+            width=console.width - 2
+        )
+
+    def __enter__(self):
+        """进入上下文"""
+        console.print()
+        self.live.start()
+        return self
+
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        """退出上下文"""
+        self.is_thinking = False
+        self.live.update(self._get_panel(), refresh=True)
+        self.live.stop()
+        console.print()
+
+    def update(self, content: str):
+        """更新面板内容"""
+        self.full_response += content
+        self.live.update(self._get_panel(), refresh=True)
+
+    def get_response(self) -> str:
+        """获取完整响应"""
+        return self.full_response
 
 
-def create_panel(
-    response: str, border_style: str = "green", width: Optional[int] = None
-) -> Panel:
-    """Create a panel with the given response."""
-    formatted_response = format_message(response)
+class ThinkingSpinner:
+    """思考中动画的上下文管理器"""
 
-    # Create panel
-    panel = Panel(
-        formatted_response,
-        title=MODEL_NAME,
-        title_align="left",
-        border_style=border_style,
-        width=width,
-    )
+    def __init__(self):
+        """初始化思考中动画"""
+        self.spinner = Spinner(
+            "dots",
+            text=f"[bold green]{get_current_language()['thinking']}[/bold green]",
+            style="green",
+        )
+        self.live = Live(
+            self.spinner,
+            console=console,
+            refresh_per_second=10,
+            transient=True
+        )
 
-    return panel
+    async def __aenter__(self):
+        """异步进入上下文"""
+        self.live.start()
+        return self
+
+    async def __aexit__(self, exc_type, exc_val, exc_tb):
+        """异步退出上下文"""
+        self.live.stop()
+
+    def __enter__(self):
+        """同步进入上下文"""
+        self.live.start()
+        return self
+
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        """同步退出上下文"""
+        self.live.stop()
 
 
-def display_response(response: str) -> None:
-    """Display the response in a panel."""
-    panel = create_panel(response)
-    console.print(panel)
-
-
-def display_error(error: str) -> None:
-    """Display an error message in a panel."""
-    panel = create_panel(error, border_style="red")
-    console.print(panel)
-
-
-def create_progress():
-    """创建进度条。
-
-    返回：
-        Progress: Rich 进度条对象
-    """
+# ===== 辅助函数 =====
+def create_progress() -> Progress:
+    """创建进度条"""
     return Progress(
         SpinnerColumn(),
         TextColumn("[progress.description]{task.description}"),
@@ -111,62 +198,21 @@ def create_progress():
     )
 
 
-class ThinkingSpinner:
-    """思考中动画的上下文管理器。"""
-
-    def __init__(self):
-        """Initialize thinking spinner."""
-        self.spinner = Spinner(
-            "dots",
-            text=f"[bold green]{get_current_language()['thinking']}[/bold green]",
-            style="green",
-        )
-        self.live = Live(
-            self.spinner, console=console, refresh_per_second=10, transient=True
-        )
-
-    async def __aenter__(self):
-        """Enter thinking spinner context."""
-        self.live.start()
-        return self
-
-    async def __aexit__(self, exc_type, exc_val, exc_tb):
-        """Exit thinking spinner context."""
-        self.live.stop()
-
-    def __enter__(self):
-        """Enter thinking spinner context."""
-        self.live.start()
-        return self
-
-    def __exit__(self, exc_type, exc_val, exc_tb):
-        """Exit thinking spinner context."""
-        self.live.stop()
-
-
-def thinking_spinner():
-    """创建思考中动画。
-
-    返回：
-        ThinkingSpinner: 支持上下文管理器的动画对象
-    """
+def thinking_spinner() -> ThinkingSpinner:
+    """创建思考中动画"""
     return ThinkingSpinner()
 
 
+# ===== 显示函数 =====
 def print_welcome():
-    """打印欢迎信息。"""
-    # 创建一个居中对齐的富文本
+    """打印欢迎信息"""
     text = Text()
     text.append("✨ ", style="bright_yellow")
     text.append(get_current_language()["welcome"], style="bold bright_white")
     text.append(" ✨", style="bright_yellow")
 
-    # 将文本居中对齐
-    aligned_text = Align.center(text)
-
-    # 创建面板，使用渐变边框颜色
     panel = Panel(
-        aligned_text,
+        Align.center(text),
         border_style="yellow",
         box=DOUBLE,
         padding=(1, 2),
@@ -174,28 +220,20 @@ def print_welcome():
         title_align="center",
     )
 
-    # 打印面板
-    console.print("\n")  # 添加一个空行
+    console.print("\n")
     console.print(panel)
-    console.print("\n")  # 添加一个空行
+    console.print("\n")
 
 
 def print_response(response: str, elapsed_time: float):
-    """打印 AI 响应。
-
-    参数：
-        response (str): AI 的响应文本
-        elapsed_time (float): 响应耗时（秒）
-    """
-    # 格式化响应文本
-    formatted_response = format_bold_text(response)
-
-    # 创建面板
+    """打印 AI 响应"""
     panel = Panel(
-        formatted_response, title=MODEL_NAME, title_align="left", border_style="green"
+        format_bold_text(response),
+        title=MODEL_NAME,
+        title_align="left",
+        border_style="green"
     )
 
-    # 打印响应和耗时
     console.print(panel)
     console.print(
         get_current_language()["response_time"].format(time=elapsed_time),
@@ -204,24 +242,14 @@ def print_response(response: str, elapsed_time: float):
 
 
 def print_error(error: str):
-    """打印错误信息。
-
-    参数：
-        error (str): 错误信息
-    """
+    """打印错误信息"""
     error_text = get_current_language()["error_message"].format(error=error)
     panel = Panel(error_text, style="bold red", title="Error")
     console.print(panel)
 
 
 def print_retry(error: str, retry: int, max_retries: int):
-    """打印重试信息。
-
-    参数：
-        error (str): 错误信息
-        retry (int): 当前重试次数
-        max_retries (int): 最大重试次数
-    """
+    """打印重试信息"""
     retry_text = get_current_language()["retry_message"].format(
         error=error, retry=retry, max_retries=max_retries
     )
@@ -229,15 +257,12 @@ def print_retry(error: str, retry: int, max_retries: int):
 
 
 def print_help():
-    """显示帮助信息。"""
-    # 创建帮助表格
+    """显示帮助信息"""
     table = Table(title="Commands", show_header=True)
     table.add_column("Command", style="cyan")
     table.add_column("Description", style="green")
 
-    # 添加命令说明
     for command, description in COMMANDS.items():
         table.add_row(command, description)
 
-    # 打印表格
     console.print(table)

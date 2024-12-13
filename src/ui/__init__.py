@@ -10,5 +10,6 @@ from .ui import (
     print_response,
     print_error,
     print_retry,
-    print_help
+    print_help,
+    StreamingPanel
 )
