@@ -14,8 +14,12 @@ from .config import (
     MAX_HISTORY_ITEMS,
     MAX_RETRIES,
     MODEL_NAME,
+    MODEL_TYPE,
     REQUEST_TIMEOUT,
     RETRY_DELAY,
+    CHUNK_SIZE,
+    STREAM_BUFFER_SIZE,
+    REFRESH_RATE,
     get_current_language,
     set_current_language,
 )

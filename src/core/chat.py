@@ -31,13 +31,17 @@ from src.config import (
     COMMANDS,
     HISTORY_FILE,
     LOG_FILE,
-    MODEL_NAME,
+    MODEL_TYPE,
+    REQUEST_TIMEOUT,
+    CHUNK_SIZE,
+    STREAM_BUFFER_SIZE,
     get_current_language,
     set_current_language,
 )
 from src.core.commands import CommandFactory
-from src.core.commands import vector_store  # 单独导入 vector_store
+from src.core.commands import vector_store
 from src.core.exceptions import APIError, NetworkError, RequestTimeoutError, ChatError
+from src.core.model_adapter import Message, get_model_adapter
 from src.core.utils import ChatHistory, ResponseCache
 from src.ui import (
     StreamingPanel,
@@ -72,7 +76,7 @@ prompt_session = PromptSession(
     completer=command_completer,
     complete_while_typing=True,
     enable_history_search=True,
-    complete_style=CompleteStyle.MULTI_COLUMN,  # 使用多列样式显示补全选项
+    complete_style=CompleteStyle.MULTI_COLUMN,  # 用多列样式显示补全选项
     mouse_support=True,  # 启用鼠标支持
 )
 
@@ -124,7 +128,7 @@ async def get_response(session: aiohttp.ClientSession, prompt: str) -> str:
     """获取 API 响应。
 
     参数：
-        session (aiohttp.ClientSession): aiohttp 会话���象
+        session (aiohttp.ClientSession): aiohttp 会话对象
         prompt (str): 用户输入的提示文本
 
     返回：
@@ -148,26 +152,26 @@ async def get_response(session: aiohttp.ClientSession, prompt: str) -> str:
     if relevant_texts:
         system_prompt += "\n\n相关上下文：\n" + "\n---\n".join(relevant_texts)
 
+    # 获取对应的模型适配器
+    adapter = get_model_adapter(MODEL_TYPE, API_KEY, API_URL)
+
+    # 构建消息列表
+    messages = [
+        Message(role="system", content=system_prompt),
+        Message(role="user", content=prompt),
+    ]
+
     # 构建请求数据
-    data = {
-        "model": MODEL_NAME,
-        "messages": [
-            {"role": "system", "content": system_prompt},
-            {"role": "user", "content": prompt},
-        ],
-        "stream": True,
-        "temperature": 0.7,
-        "top_p": 0.7,
-    }
+    data = adapter.format_request(messages, stream=True)
 
     try:
         async with session.post(
-            API_URL, 
-            headers={
-                "Authorization": API_KEY,
-                "Content-Type": "application/json",
-            },
-            json=data
+            adapter.api_url, 
+            headers=adapter.get_headers(),
+            json=data,
+            timeout=REQUEST_TIMEOUT,
+            chunked=True,  # Enable chunked transfer
+            read_bufsize=CHUNK_SIZE  # Use optimized chunk size
         ) as response:
             if response.status != 200:
                 error_data = await response.json()
@@ -176,23 +180,24 @@ async def get_response(session: aiohttp.ClientSession, prompt: str) -> str:
 
             # 使用流式响应面板
             with StreamingPanel() as panel:
+                buffer = []
                 async for line in response.content:
                     if line:
                         try:
                             line_text = line.decode('utf-8').strip()
-                            if line_text.startswith('data: '):
-                                try:
-                                    data = json.loads(line_text[6:])
-                                    if data.get('choices') and len(data['choices']) > 0:
-                                        if data['choices'][0].get('finish_reason') is not None:
-                                            break
-                                        content = data['choices'][0].get('delta', {}).get('content', '')
-                                        if content:
-                                            panel.update(content)
-                                except json.JSONDecodeError:
-                                    continue
+                            content = await adapter.parse_stream_line(line_text)
+                            if content:
+                                buffer.append(content)
+                                # 当缓冲区达到一定大小时才更新UI
+                                if len(buffer) >= STREAM_BUFFER_SIZE:
+                                    panel.update("".join(buffer))
+                                    buffer = []
                         except UnicodeDecodeError:
                             continue
+
+                # 确保最后的缓冲区内容也被显示
+                if buffer:
+                    panel.update("".join(buffer))
 
                 return panel.get_response()
 
