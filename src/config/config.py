@@ -74,12 +74,12 @@ MODEL_NAMES = {
 MODEL_NAME = os.getenv("MODEL_NAME", MODEL_NAMES.get(MODEL_TYPE, MODEL_NAMES["silicon"]))
 
 # 重试配置
-MAX_RETRIES = 2  # 减少重试次数以提高响应速���
+MAX_RETRIES = 2  # 减少重试次数以提高响应速度
 RETRY_DELAY = 1  # 减少重试延迟
 REQUEST_TIMEOUT = aiohttp.ClientTimeout(
-    total=20,        # 总超时时间
-    connect=5,       # 连接超时
-    sock_read=15     # 读取超时
+    total=60,        # 总超时时间（1分钟）
+    connect=10,      # 连接超时
+    sock_read=45     # 读取超时
 )  # 优化超时设置
 
 # 缓存配置
@@ -160,7 +160,7 @@ set_current_language = LanguageManager.set_current_language
 COMMANDS = {
     "/exit": "退出程序",
     "/clear": "清除屏幕",
-    "/history": "���示历史记录",
+    "/history": "显示历史记录",
     "/lang": "切换语言 (en/zh)",
     "/help": "显示帮助信息",
     "/load": "加载文档到知识库 (/load [文件路径]) - 首次使用时会下载必要的 AI 模型（约 100MB）",
