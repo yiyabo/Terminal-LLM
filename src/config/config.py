@@ -27,12 +27,18 @@
 """
 
 import os
-
-import aiohttp
+import warnings
 from dotenv import load_dotenv
+import aiohttp
 
-# 加载环境变量
-load_dotenv()
+# Suppress python-dotenv warnings about commented lines
+warnings.filterwarnings("ignore", category=UserWarning, module="dotenv.main")
+
+# 加载环境变量，并忽略注释行
+try:
+    load_dotenv(override=True)
+except Exception as e:
+    print(f"Warning: Error loading .env file: {e}")
 
 # 日志文件路径
 # 获取当前文件所在目录的父目录（src）
@@ -41,16 +47,40 @@ BASE_DIR = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__fil
 LOG_FILE = os.path.join(BASE_DIR, "data", "chat.log")
 
 # API配置
-API_KEY = os.getenv("API_KEY", "")  # API密钥
-API_URL = os.getenv(
-    "API_URL", "https://open.bigmodel.cn/api/paas/v4/chat/completions"
-)  # API端点URL
-MODEL_NAME = os.getenv("MODEL_NAME", "glm-4-flash")  # 使用的模型名称
+API_KEY = os.getenv("API_KEY", "").strip()  # Strip whitespace
+if not API_KEY:
+    print("Warning: API_KEY not found in environment variables")
+
+MODEL_TYPE = os.getenv("MODEL_TYPE", "silicon").lower().strip()  # 默认使用 silicon
+
+# 不同模型的 API URL
+API_URLS = {
+    "chatglm": "https://open.bigmodel.cn/api/paas/v4/chat/completions",
+    "qwen": "https://dashscope.aliyuncs.com/api/v1/services/aigc/text-generation/generation",
+    "llama": "https://api.llama-api.com/chat/completions",
+    "silicon": "https://api.siliconflow.cn/v1/chat/completions",
+}
+
+API_URL = os.getenv("API_URL", API_URLS.get(MODEL_TYPE, API_URLS["silicon"]))
+
+# 不同模型的默认模型名称
+MODEL_NAMES = {
+    "chatglm": "glm-4",
+    "qwen": "qwen-max",
+    "llama": "llama-2-70b-chat",
+    "silicon": "Qwen/QwQ-32B-Preview",
+}
+
+MODEL_NAME = os.getenv("MODEL_NAME", MODEL_NAMES.get(MODEL_TYPE, MODEL_NAMES["silicon"]))
 
 # 重试配置
-MAX_RETRIES = 3  # 最大重试次数
-RETRY_DELAY = 2  # 重试间隔（秒）
-REQUEST_TIMEOUT = aiohttp.ClientTimeout(total=30)  # 请求超时时间（秒）
+MAX_RETRIES = 2  # 减少重试次数以提高响应速���
+RETRY_DELAY = 1  # 减少重试延迟
+REQUEST_TIMEOUT = aiohttp.ClientTimeout(
+    total=20,        # 总超时时间
+    connect=5,       # 连接超时
+    sock_read=15     # 读取超时
+)  # 优化超时设置
 
 # 缓存配置
 CACHE_ENABLED = True  # 是否启用响应缓存
@@ -61,6 +91,10 @@ HISTORY_FILE = os.path.join(
 )  # 历史记录文件路径
 MAX_HISTORY_ITEMS = 100  # 最大历史记录数量
 
+# 性能优化配置
+CHUNK_SIZE = 512  # 每次流式传输的数据块大小（字节）
+REFRESH_RATE = 9999999999999999  # 界面刷新率（赫兹）- 系统会自动调整到最大可能值
+STREAM_BUFFER_SIZE = 1  # 流式输出的缓冲区大小（设为最小以获得最快响应）
 
 # 多语言支持配置
 LANGUAGES = {
@@ -126,7 +160,7 @@ set_current_language = LanguageManager.set_current_language
 COMMANDS = {
     "/exit": "退出程序",
     "/clear": "清除屏幕",
-    "/history": "显示历史记录",
+    "/history": "���示历史记录",
     "/lang": "切换语言 (en/zh)",
     "/help": "显示帮助信息",
     "/load": "加载文档到知识库 (/load [文件路径]) - 首次使用时会下载必要的 AI 模型（约 100MB）",
