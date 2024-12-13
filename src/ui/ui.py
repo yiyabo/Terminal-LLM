@@ -74,8 +74,22 @@ class StreamingPanel:
         self.is_thinking = True
         self.start_time = time.time()
         
-        # 进度条配置
-        self.progress_chars = ["█", "▉", "▊", "▋", "▌", "▍", "▎", "▏"]
+        # 进度条配置 - 超精细的渐变方块字符集
+        self.progress_chars = [
+            "█", "▉", "▊", "▋", "▌", "▍", "▎", "▏",  # 8种左右渐变
+            "▐", "▕",  # 2种边缘方块
+            "▀", "▄", "▔", "▁", # 4种上下边缘
+            "▆", "▅", "▃", "▂",  # 4种渐变高度
+            "▇", "▆", "▅", "▄", "▃", "▂", "▁",  # 7种渐变厚度
+            "░", "▒", "▓", "█",  # 4种不同密度
+            "⣿", "⣾", "⣽", "⣻", "⢿", "⡿", "⣟", "⣯", "⣷",  # 9种点阵渐变
+            "⠿", "⠷", "⠯", "⠟", "⠻", "⠽", "⠾",  # 7种点阵填充
+            "⬛", "⬜", "◼", "◾", "▪", "◾", "▫", "◽",  # 8种方块变体
+            "∎", "⊞", "⊟", "⊡", "⊠",  # 5种特殊方块
+            "◰", "◱", "◲", "◳", "◴", "◵", "◶", "◷",  # 8种分块渐变
+            "⯀", "⯁", "⯂", "⯃", "⯄", "⯅", "⯆", "⯇", "⯈",  # 9种几何形状
+            "⚀", "⚁", "⚂", "⚃", "⚄", "⚅"  # 6种骰子点数
+        ]
         self.bar_width = 20
         
         self.live = Live(
@@ -86,17 +100,32 @@ class StreamingPanel:
 
     def _get_progress_bar(self, elapsed: float) -> Text:
         """生成动画进度条"""
-        # 使用余弦函数使动画更平滑
-        pos = int((self.bar_width + 8) * (1 + math.cos(elapsed * 3)) / 2)
+        # 使用多个动画周期，创造更复杂的动画效果
+        char_count = len(self.progress_chars)
+        wave_count = 3  # 同时显示的波浪数
         
-        # 创建进度条
+        # 创建基础进度条
         bar = ["░"] * self.bar_width
         
-        # 添加动画效果
-        for i in range(8):
-            pos_idx = pos - i
-            if 0 <= pos_idx < self.bar_width:
-                bar[pos_idx] = self.progress_chars[i]
+        # 为每个波浪创建动画
+        for wave in range(wave_count):
+            # 使用正弦函数创造波浪效果，不同的波浪有不同的速度和相位
+            phase = wave * 2 * math.pi / wave_count
+            speed = (wave + 1) * 2
+            
+            # 计算当前波浪的位置
+            pos = int(self.bar_width * (0.5 + 0.5 * math.sin(elapsed * speed + phase)))
+            
+            # 在波浪位置周围添加渐变效果
+            gradient_width = char_count // wave_count  # 每个波浪使用的字符数
+            for i in range(gradient_width):
+                # 计算字符位置，考虑循环
+                char_idx = (wave * gradient_width + i) % char_count
+                pos_idx = (pos - i) % self.bar_width
+                
+                # 在合适的位置放置字符
+                if 0 <= pos_idx < self.bar_width:
+                    bar[pos_idx] = self.progress_chars[char_idx]
         
         return Text("".join(bar), style="bright_green")
 
