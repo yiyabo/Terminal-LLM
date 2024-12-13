@@ -94,29 +94,33 @@ LANGUAGES = {
     },
 }
 
-# 当前语言
-_current_language = "zh"
+class LanguageManager:
+    """语言管理器"""
+    _current_language = "zh"
+
+    @classmethod
+    def get_current_language(cls):
+        """获取当前语言配置。"""
+        return LANGUAGES[cls._current_language]
+
+    @classmethod
+    def set_current_language(cls, lang_code: str):
+        """设置当前语言。
+
+        参数：
+            lang_code (str): 语言代码，支持 'en' 和 'zh'
+
+        异常：
+            KeyError: 当语言代码不存在时抛出
+        """
+        if lang_code not in LANGUAGES:
+            raise KeyError(f"Language '{lang_code}' not supported")
+        cls._current_language = lang_code
 
 
-def get_current_language():
-    """获取当前语言配置。"""
-    return LANGUAGES[_current_language]
-
-
-def set_current_language(lang_code: str):
-    """设置当前语言。
-
-    参数：
-        lang_code (str): 语言代码，支持 'en' 和 'zh'
-
-    异常：
-        KeyError: 当语言代码不存在时抛出
-    """
-    global _current_language
-    if lang_code not in LANGUAGES:
-        raise KeyError(f"Language '{lang_code}' not supported")
-    _current_language = lang_code
-
+# 导出语言管理方法
+get_current_language = LanguageManager.get_current_language
+set_current_language = LanguageManager.set_current_language
 
 # 命令配置
 COMMANDS = {

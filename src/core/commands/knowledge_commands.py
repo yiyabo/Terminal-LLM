@@ -1,6 +1,5 @@
 """知识库相关命令"""
 
-import os
 from typing import Optional
 from rich.panel import Panel
 from rich.text import Text
@@ -12,6 +11,7 @@ from src.core.commands import Command
 # 全局向量存储实例
 vector_store = VectorStore()
 
+# pylint: disable=too-few-public-methods
 class LoadCommand(Command):
     """加载文档命令"""
 
@@ -60,10 +60,11 @@ class LoadCommand(Command):
         return True
 
 
+# pylint: disable=too-few-public-methods
 class ClearCommand(Command):
     """清空知识库命令"""
 
-    def execute(self, *args, **kwargs) -> Optional[bool]:
+    async def execute(self, *args, **kwargs) -> Optional[bool]:
         """执行清空知识库命令
 
         用法: /clear

@@ -47,36 +47,32 @@ from prompt_toolkit.history import InMemoryHistory
 from src.config import (
     API_KEY,
     API_URL,
-    CACHE_ENABLED,
     CACHE_FILE,
     COMMANDS,
     HISTORY_FILE,
     LOG_FILE,
-    MAX_RETRIES,
     MODEL_NAME,
-    REQUEST_TIMEOUT,
-    RETRY_DELAY,
     get_current_language,
     set_current_language,
 )
 from src.core.commands import (
-    ClearCommand,
     CommandFactory,
-    ExitCommand,
-    HelpCommand,
-    HistoryCommand,
-    LangCommand,
-    vector_store,
 )
+from src.core.commands import vector_store  # 单独导入 vector_store
 from src.core.utils import ChatHistory, ResponseCache
 from src.ui import (
     console,
     print_error,
     print_help,
     print_response,
-    print_retry,
     print_welcome,
     thinking_spinner,
+)
+from src.core.exceptions import (
+    APIError,
+    NetworkError,
+    RequestTimeoutError,
+    ChatError,
 )
 
 # 初始化全局变量
@@ -102,7 +98,7 @@ def print_welcome_message() -> None:
 def change_language(lang: str) -> None:
     """切换界面语言。
 
-    测试多语言支持功能。
+    测试多语支持功能。
 
     参数：
         lang (str): 语言代码，支持 'en' 和 'zh'
@@ -196,17 +192,17 @@ async def get_response(session: aiohttp.ClientSession, prompt: str) -> str:
                 if response.status != 200:
                     error_data = await response.json()
                     error_message = error_data.get("error", {}).get("message", "未知错误")
-                    raise Exception(f"API 错误 ({response.status}): {error_message}")
+                    raise APIError(f"API 错误 ({response.status}): {error_message}")
 
                 result = await response.json()
                 return result["choices"][0]["message"]["content"]
 
         except aiohttp.ClientError as e:
-            raise Exception(f"网络错误: {str(e)}")
-        except asyncio.TimeoutError:
-            raise Exception("请求超时")
+            raise NetworkError(f"网络错误: {str(e)}") from e
+        except asyncio.TimeoutError as e:
+            raise RequestTimeoutError(f"请求超时: {str(e)}") from e
         except Exception as e:
-            raise Exception(f"发生错误: {str(e)}")
+            raise ChatError(f"发生错误: {str(e)}") from e
 
 
 async def main() -> None:
@@ -248,7 +244,7 @@ async def main() -> None:
                     result = await handle_user_input(user_input)
                     if result is False:
                         return  # 退出程序
-                    continue  # 继续下一次循环
+                    continue  # 继续下次循环
 
                 # 如果不是命令，发送给 AI
                 start_time = time.perf_counter()
@@ -270,8 +266,8 @@ async def main() -> None:
                         f"\n[bold yellow]{get_current_language()['exit_message']}[/bold yellow]"
                     )
                     return  # 退出程序
-            except Exception as e:
-                logging.error(f"发生错误: {str(e)}")
+            except (NetworkError, RequestTimeoutError, APIError, ChatError) as e:
+                logging.error("发生错误: %s", str(e))
                 print_error(str(e))
 
 

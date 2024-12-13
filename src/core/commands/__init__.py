@@ -3,16 +3,13 @@
 提供所有命令的实现。
 """
 
-from abc import ABC, abstractmethod
-from typing import Optional, Dict, Type
+from typing import Dict, Type, Optional
 
-class Command(ABC):
-    """命令基类"""
-    
-    @abstractmethod
-    async def execute(self, *args, **kwargs) -> Optional[bool]:
-        """执行命令"""
-        pass
+from .base import Command
+from .basic_commands import ExitCommand, ClearCommand, HelpCommand, LangCommand
+from .knowledge_commands import LoadCommand, ClearCommand as ClearKnowledgeCommand, vector_store
+from .history_commands import HistoryCommand
+
 
 class CommandFactory:
     """命令工厂类"""
@@ -38,10 +35,6 @@ class CommandFactory:
             return command_class()
         return None
 
-# 导入所有命令
-from .basic_commands import ExitCommand, ClearCommand, HelpCommand, LangCommand
-from .knowledge_commands import LoadCommand, ClearCommand as ClearKnowledgeCommand, vector_store
-from .history_commands import HistoryCommand
 
 # 注册命令
 CommandFactory.register('exit', ExitCommand)

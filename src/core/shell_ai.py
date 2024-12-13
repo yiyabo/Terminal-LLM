@@ -39,9 +39,8 @@
 """
 
 import asyncio
-
-#!/usr/bin/env python
 import os
+import subprocess
 import sys
 from typing import Optional
 
@@ -52,6 +51,7 @@ from rich.console import Console
 from rich.panel import Panel
 
 from src.config import API_KEY, API_URL, MODEL_NAME, REQUEST_TIMEOUT
+from src.core.exceptions import APIError
 
 console = Console()
 
@@ -111,7 +111,7 @@ class ShellAI:
                     response_data = await response.json()
                     return response_data["choices"][0]["message"]["content"]
                 else:
-                    raise Exception(f"API error: {response.status}")
+                    raise APIError(f"API error: {response.status}")
 
     async def process_natural_language(self, user_input: str) -> Optional[str]:
         """处理自然语言输入并转换为命令。
@@ -120,13 +120,13 @@ class ShellAI:
         包含详细的转换规则和安全检查。
 
         参数：
-            user_input (str): 用户的自然语言输入
+            user_input (str): 用户的���然语言输入
 
         返回：
             Optional[str]: 转换后的 Shell 命令，如果转换失败则返回 None
         """
         prompt = f"""
-        请将以下自然语言请求转换为对应的shell命令：
+        请将以下自然语言请转换为对应的shell命令：
         '{user_input}'
 
         要求：
@@ -150,7 +150,7 @@ class ShellAI:
         try:
             command = await self.get_llm_response(prompt)
             return command.strip()
-        except Exception as e:
+        except (ValueError, KeyError, TypeError) as e:
             console.print(f"[red]Error converting to command: {e}[/red]")
             return None
 
@@ -216,7 +216,7 @@ class ShellAI:
                 console.print(f"[red]{stderr.decode().rstrip()}[/red]")
 
             return process.returncode
-        except Exception as e:
+        except (subprocess.SubprocessError, OSError) as e:
             console.print(f"[red]Error executing command: {e}[/red]")
             return None
 
@@ -228,7 +228,7 @@ class ShellAI:
         2. 获取用户输入
         3. 处理特殊命令（exit、clear）
         4. 转换自然语言为命令
-        5. 确认和执行命令
+        5. 确认和执行命���
         6. 错误处理
 
         异常：
@@ -269,7 +269,7 @@ class ShellAI:
                 continue
             except EOFError:
                 break
-            except Exception as e:
+            except (APIError, ConnectionError, subprocess.SubprocessError, OSError) as e:
                 console.print(f"[red]Error: {e}[/red]")
 
 
@@ -285,7 +285,10 @@ def main() -> None:
     try:
         shell_ai = ShellAI()
         asyncio.run(shell_ai.run())
-    except Exception as e:
+    except (KeyboardInterrupt, asyncio.CancelledError):
+        console.print("\n[yellow]程序被用户中断[/yellow]")
+        sys.exit(0)
+    except (APIError, ConnectionError, OSError) as e:
         console.print(f"[red]Fatal error: {e}[/red]")
         sys.exit(1)
 

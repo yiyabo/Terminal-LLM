@@ -7,6 +7,7 @@ from rich.text import Text
 from src.ui import console
 from src.core.utils import ChatHistory
 from src.core.commands import Command
+from src.config import HISTORY_FILE
 
 class HistoryCommand(Command):
     """历史记录命令"""
@@ -17,8 +18,8 @@ class HistoryCommand(Command):
         用法: /history [数量]
         """
         # 获取历史记录
-        history = ChatHistory()
-        records = history.get_records()
+        history = ChatHistory(HISTORY_FILE)
+        records = history.get_recent_history()
         
         if not records:
             console.print("[yellow]暂无历史记录[/yellow]")
@@ -37,8 +38,8 @@ class HistoryCommand(Command):
         for i, record in enumerate(records[-limit:], 1):
             text.append(f"[bold blue]{i}. 用户:[/bold blue]\n")
             text.append(f"{record['user']}\n\n")
-            text.append(f"[bold green]   回复:[/bold green]\n")
-            text.append(f"{record['response']}\n\n")
+            text.append("[bold green]   回复:[/bold green]\n")
+            text.append(f"{record['assistant']}\n\n")
 
         # 显示结果
         panel = Panel(

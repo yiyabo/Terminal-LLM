@@ -11,7 +11,6 @@ from abc import ABC, abstractmethod
 from typing import Optional
 
 from rich.align import Align
-from rich.console import Console
 from rich.panel import Panel
 
 from src.config import get_current_language, set_current_language
@@ -22,6 +21,7 @@ from src.ui import console, print_help, print_welcome
 chat_history = ChatHistory("data/history/chat_history.json")
 
 
+# pylint: disable=too-few-public-methods
 class Command(ABC):
     """命令接口。"""
 
@@ -62,8 +62,6 @@ class HistoryCommand(Command):
     """历史记录命令。"""
 
     def execute(self, *args, **kwargs) -> bool:
-        from rich.panel import Panel
-
         history = chat_history.get_recent_history()
         history_text = "\n".join(
             [f"User: {h['user']}\nLLM: {h['assistant']}" for h in history]
@@ -81,8 +79,11 @@ class HistoryCommand(Command):
 class LangCommand(Command):
     """语言切换命令。"""
 
-    def execute(self, lang_code: str, *args, **kwargs) -> bool:
+    def execute(self, *args, **kwargs) -> bool:
         try:
+            if not args:
+                raise KeyError("请指定语言代码 (en/zh)")
+            lang_code = args[0]
             set_current_language(lang_code)
             console.print(get_current_language()["language_changed"])
         except KeyError as e:

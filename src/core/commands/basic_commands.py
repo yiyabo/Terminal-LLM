@@ -1,15 +1,16 @@
 """基本命令实现"""
 
 from typing import Optional
-from rich.console import Console
 from rich.panel import Panel
 from rich.align import Align
 from rich.text import Text
 from rich.box import DOUBLE
 from src.ui import console, print_help
 from src.config import get_current_language, set_current_language
-from . import Command
+from src.core.commands.base import Command
 
+
+# pylint: disable=too-few-public-methods
 class ExitCommand(Command):
     """退出命令"""
     async def execute(self, *args, **kwargs) -> Optional[bool]:
@@ -38,25 +39,34 @@ class ExitCommand(Command):
         console.print("\n")  # 添加一个空行
         return False
 
+
+# pylint: disable=too-few-public-methods
 class ClearCommand(Command):
     """清屏命令"""
     async def execute(self, *args, **kwargs) -> Optional[bool]:
         console.clear()
         return True
 
+
+# pylint: disable=too-few-public-methods
 class HelpCommand(Command):
     """帮助命令"""
     async def execute(self, *args, **kwargs) -> Optional[bool]:
         print_help()
         return True
 
+
+# pylint: disable=too-few-public-methods
 class LangCommand(Command):
     """语言切换命令"""
-    async def execute(self, lang_code: str, **kwargs) -> Optional[bool]:
+    async def execute(self, *args, **kwargs) -> Optional[bool]:
         try:
+            if not args:
+                raise KeyError("请指定语言代码 (en/zh)")
+            lang_code = args[0]
             set_current_language(lang_code)
             console.print(get_current_language()['language_changed'])
             return True
-        except KeyError:
-            console.print("[red]不支持的语言代码[/red]")
+        except KeyError as e:
+            console.print(f"[red]{str(e)}[/red]")
             return True

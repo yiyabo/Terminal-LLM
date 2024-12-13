@@ -7,4 +7,5 @@ from .chat import main as chat_main
 from .commands import CommandFactory, Command
 from .utils import ChatHistory
 
+# 导入所有核心功能
 __all__ = ['chat_main', 'CommandFactory', 'Command', 'ChatHistory']
