@@ -16,40 +16,15 @@ import logging
 import time
 from typing import Optional
 
-from prompt_toolkit.styles import Style
-
-# 定义样式
-style = Style.from_dict(
-    {
-        "command": "#ansiyellow bold",
-        "bottom-toolbar": "#ansibrightblack",
-        "bottom-toolbar.text": "#ansiwhite",
-        "bottom-toolbar.key": "#ansiyellow",
-        "completion-menu.completion": "bg:#008888 #ffffff",
-        "completion-menu.completion.current": "bg:#00aaaa #000000",
-        "completion-menu.meta.completion": "bg:#444444 #ffffff",
-        "completion-menu.meta.completion.current": "bg:#666666 #ffffff",
-    }
-)
-
 import aiohttp
 from prompt_toolkit import PromptSession
-from prompt_toolkit.completion import (
-    Completer,
-    Completion,
-    NestedCompleter,
-    WordCompleter,
-)
+from prompt_toolkit.completion import Completer, Completion
 from prompt_toolkit.document import Document
-from prompt_toolkit.filters import is_done
 from prompt_toolkit.formatted_text import HTML
 from prompt_toolkit.history import InMemoryHistory
 from prompt_toolkit.key_binding import KeyBindings
-from prompt_toolkit.keys import Keys
-from prompt_toolkit.layout.containers import HSplit, Window
-from prompt_toolkit.layout.controls import FormattedTextControl
-from prompt_toolkit.layout.layout import Layout
 from prompt_toolkit.shortcuts import CompleteStyle
+from prompt_toolkit.styles import Style
 
 from src.config import (
     API_KEY,
@@ -72,6 +47,20 @@ from src.core.prompt_manager import PromptManager
 from src.core.utils import ChatHistory, ResponseCache
 from src.ui import StreamingPanel, console, print_error, print_help, print_welcome
 
+# 定义样式
+style = Style.from_dict(
+    {
+        "command": "#ansiyellow bold",
+        "bottom-toolbar": "#ansibrightblack",
+        "bottom-toolbar.text": "#ansiwhite",
+        "bottom-toolbar.key": "#ansiyellow",
+        "completion-menu.completion": "bg:#008888 #ffffff",
+        "completion-menu.completion.current": "bg:#00aaaa #000000",
+        "completion-menu.meta.completion": "bg:#444444 #ffffff",
+        "completion-menu.meta.completion.current": "bg:#666666 #ffffff",
+    }
+)
+
 # 初始化全局变量
 chat_history = ChatHistory(HISTORY_FILE)
 response_cache = ResponseCache(CACHE_FILE)
@@ -89,9 +78,23 @@ class CommandCompleter(Completer):
     """自定义命令补全器"""
 
     def __init__(self, commands):
+        """初始化命令补全器。
+
+        参数:
+            commands: 命令字典，键为命令名，值为命令描述
+        """
         self.commands = commands
 
     def get_completions(self, document: Document, complete_event):
+        """获取补全建议。
+
+        参数:
+            document: 当前文档对象
+            complete_event: 补全事件对象
+
+        返回:
+            生成器，产生 Completion 对象
+        """
         # 只在输入 / 后触发
         if document.text.startswith("/"):
             word = document.text[1:]  # 去掉 / 前缀
@@ -115,7 +118,11 @@ kb = KeyBindings()
 
 @kb.add("tab")
 def _(event):
-    """处理 Tab 键"""
+    """处理 Tab 键。
+
+    参数:
+        event: 按键事件对象
+    """
     buff = event.current_buffer
     # 如果当前有补全菜单
     if buff.complete_state:
@@ -126,7 +133,11 @@ def _(event):
 
 @kb.add("enter")
 def _(event):
-    """处理 Enter 键"""
+    """处理 Enter 键。
+
+    参数:
+        event: 按键事件对象
+    """
     buff = event.current_buffer
     # 如果有补全菜单打开，就接受补全但不提交
     if buff.complete_state:
@@ -155,7 +166,6 @@ prompt_session = PromptSession(
 )
 
 
-# ===== 界面功能 =====
 def print_welcome_message() -> None:
     """打印欢迎信息。"""
     print_welcome()
@@ -174,7 +184,6 @@ def change_language(lang: str) -> None:
     console.print(get_current_language()["language_changed"])
 
 
-# ===== 命令处理 =====
 async def handle_user_input(user_input: str) -> Optional[bool]:
     """处理用户输入的命令。
 
@@ -197,11 +206,10 @@ async def handle_user_input(user_input: str) -> Optional[bool]:
     return await command.execute(*args)
 
 
-# ===== API 交互 =====
 async def get_response(session: aiohttp.ClientSession, prompt: str) -> str:
     """获取 API 响应。
 
-    参数：
+    参数��
         session (aiohttp.ClientSession): aiohttp 会话对象
         prompt (str): 用户输入的提示文本
 
@@ -295,7 +303,6 @@ async def get_response(session: aiohttp.ClientSession, prompt: str) -> str:
         raise ChatError(f"发生错误: {str(e)}") from e
 
 
-# ===== 主程序 =====
 async def main() -> None:
     """主程序入口。
 
@@ -336,7 +343,7 @@ async def main() -> None:
                 # 保存历史记录
                 chat_history.add_interaction(user_input, response)
 
-                # 示响应时间
+                # 显示响应时间
                 console.print(f"\n[dim]响应时间: {elapsed_time:.2f} 秒[/dim]")
 
             except KeyboardInterrupt:
