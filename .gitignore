@@ -49,3 +49,4 @@ data/cache/*
 data/history/*
 !data/cache/.gitkeep
 !data/history/.gitkeep
+.DS_Store
