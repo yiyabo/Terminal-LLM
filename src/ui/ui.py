@@ -9,8 +9,8 @@
 日期：2024-12-10
 """
 
-import time
 import math
+import time
 from dataclasses import dataclass
 from typing import List
 
@@ -27,12 +27,12 @@ from rich.progress import (
     TimeElapsedColumn,
 )
 from rich.spinner import Spinner
+from rich.style import Style
 from rich.table import Table
 from rich.text import Text
-from rich.style import Style
 
 from src.config import COMMANDS, MODEL_NAME, get_current_language
-from src.core.utils import format_bold_text
+from src.core.utils import format_bold_text, format_text_with_code_blocks
 
 # 创建控制台对象
 console = Console()
@@ -42,6 +42,7 @@ console = Console()
 @dataclass
 class Message:
     """消息数据结构"""
+
     role: str
     content: str
 
@@ -50,7 +51,7 @@ class ChatHistory:
     """聊天历史管理类"""
 
     def __init__(self):
-        """初始化聊天历史"""
+        """始化聊天历史"""
         self.messages: List[Message] = []
 
     def add_message(self, role: str, content: str) -> None:
@@ -73,22 +74,23 @@ class StreamingPanel:
         self.full_response = ""
         self.is_thinking = True
         self.start_time = time.time()
-        
+
         # 进度条配置 - 简洁的进度条字符
         self.progress_chars = ["█", "▒"]  # 实心方块和浅色方块
         self.bar_width = 50  # 加长进度条宽度
-        
+
         self.live = Live(
             self._get_panel(),
             refresh_per_second=15,
-            auto_refresh=True
+            auto_refresh=True,
+            vertical_overflow="visible",  # 允许内容超出面板高度
         )
 
     def _get_progress_bar(self, elapsed: float) -> Text:
         """生成动画进度条"""
         # 使用简单的来回移动效果
         pos = int(self.bar_width * (0.5 + 0.5 * math.sin(elapsed * 2)))
-        
+
         # 创建进度条
         bar = []
         for i in range(self.bar_width):
@@ -98,32 +100,31 @@ class StreamingPanel:
             else:
                 # 使用深灰色作为背景
                 bar.append(Text(self.progress_chars[1], style="grey37"))
-        
+
         return Text("").join(bar)
 
     def _get_panel(self) -> Panel:
         """获取当前面板"""
-        # 格式化文本
-        formatted_text = format_bold_text(self.full_response)
-        
+        # 使用新的格式化函数处理文本，返回 Group 对象
+        formatted_content = format_text_with_code_blocks(self.full_response)
+
         # 如果正在生成，添加进度条
         if self.is_thinking:
-            elapsed = time.time() - self.start_time
-            content = Group(
-                formatted_text,
-                Text("", end="") if not formatted_text else Text("\n"),
-                self._get_progress_bar(elapsed)
-            )
+            renderables = list(formatted_content.renderables)
+            renderables.append(Text("\n"))
+            renderables.append(self._get_progress_bar(time.time() - self.start_time))
+            content = Group(*renderables)
         else:
-            content = formatted_text
-        
+            content = formatted_content
+
         return Panel(
             content,
             title=f"🤖 {MODEL_NAME}",
             title_align="left",
             border_style=self.panel_style,
             padding=(1, 2),
-            width=console.width - 2
+            width=console.width - 2,
+            expand=True,
         )
 
     def __enter__(self):
@@ -160,10 +161,7 @@ class ThinkingSpinner:
             style="green",
         )
         self.live = Live(
-            self.spinner,
-            console=console,
-            refresh_per_second=10,
-            transient=True
+            self.spinner, console=console, refresh_per_second=10, transient=True
         )
 
     async def __aenter__(self):
@@ -208,7 +206,7 @@ def thinking_spinner() -> ThinkingSpinner:
 def print_welcome():
     """打印欢迎信息"""
     text = Text()
-    text.append("✨ ", style="bright_yellow")
+    text.append(" ", style="bright_yellow")
     text.append(get_current_language()["welcome"], style="bold bright_white")
     text.append(" ✨", style="bright_yellow")
 
@@ -232,7 +230,7 @@ def print_response(response: str, elapsed_time: float):
         format_bold_text(response),
         title=MODEL_NAME,
         title_align="left",
-        border_style="green"
+        border_style="green",
     )
 
     console.print(panel)
