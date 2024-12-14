@@ -28,32 +28,27 @@ from src.config import (
     API_KEY,
     API_URL,
     CACHE_FILE,
+    CHUNK_SIZE,
     COMMANDS,
     HISTORY_FILE,
     LOG_FILE,
     MODEL_TYPE,
     REQUEST_TIMEOUT,
-    CHUNK_SIZE,
     STREAM_BUFFER_SIZE,
     get_current_language,
     set_current_language,
 )
-from src.core.commands import CommandFactory
-from src.core.commands import vector_store
-from src.core.exceptions import APIError, NetworkError, RequestTimeoutError, ChatError
+from src.core.commands import CommandFactory, vector_store
+from src.core.exceptions import APIError, ChatError, NetworkError, RequestTimeoutError
 from src.core.model_adapter import Message, get_model_adapter
+from src.core.prompt_manager import PromptManager
 from src.core.utils import ChatHistory, ResponseCache
-from src.ui import (
-    StreamingPanel,
-    console,
-    print_error,
-    print_help,
-    print_welcome,
-)
+from src.ui import StreamingPanel, console, print_error, print_help, print_welcome
 
 # 初始化全局变量
 chat_history = ChatHistory(HISTORY_FILE)
 response_cache = ResponseCache(CACHE_FILE)
+prompt_manager = PromptManager()
 
 # 初始化日志记录
 logging.basicConfig(
@@ -67,7 +62,7 @@ command_completer = WordCompleter(
     list(COMMANDS.keys()),
     ignore_case=True,
     sentence=True,  # 允许输入空格
-    match_middle=True  # 允许在中间匹配
+    match_middle=True,  # 允许在中间匹配
 )
 
 # 创建 prompt session
@@ -102,7 +97,7 @@ def change_language(lang: str) -> None:
 
 # ===== 命令处理 =====
 async def handle_user_input(user_input: str) -> Optional[bool]:
-    """处理用户输入的命令。
+    """处理用户输入的命���。
 
     参数：
         user_input (str): 用户输入的命令
@@ -140,6 +135,9 @@ async def get_response(session: aiohttp.ClientSession, prompt: str) -> str:
         APIError: API 调用错误
         ChatError: 其他错误
     """
+    # 获取最近5次对话历史
+    recent_history = chat_history.get_recent_history(5)
+
     # 检索相关文本
     relevant_texts = []
     if vector_store.index.ntotal > 0:
@@ -147,8 +145,8 @@ async def get_response(session: aiohttp.ClientSession, prompt: str) -> str:
         if results:
             relevant_texts = [result.content for result in results]
 
-    # 构建系统提示
-    system_prompt = "你是一个有帮助的 AI 助手。"
+    # 获取组合后的系统提示词
+    system_prompt = prompt_manager.get_combined_prompt(prompt)
     if relevant_texts:
         system_prompt += "\n\n相关上下文：\n" + "\n---\n".join(relevant_texts)
 
@@ -156,22 +154,31 @@ async def get_response(session: aiohttp.ClientSession, prompt: str) -> str:
     adapter = get_model_adapter(MODEL_TYPE, API_KEY, API_URL)
 
     # 构建消息列表
-    messages = [
-        Message(role="system", content=system_prompt),
-        Message(role="user", content=prompt),
-    ]
+    messages = [Message(role="system", content=system_prompt)]
+
+    # 添加历史对话
+    for history_item in recent_history:
+        messages.extend(
+            [
+                Message(role="user", content=history_item["user"]),
+                Message(role="assistant", content=history_item["assistant"]),
+            ]
+        )
+
+    # 添加当前用户输入
+    messages.append(Message(role="user", content=prompt))
 
     # 构建请求数据
     data = adapter.format_request(messages, stream=True)
 
     try:
         async with session.post(
-            adapter.api_url, 
+            adapter.api_url,
             headers=adapter.get_headers(),
             json=data,
             timeout=REQUEST_TIMEOUT,
             chunked=True,  # Enable chunked transfer
-            read_bufsize=CHUNK_SIZE  # Use optimized chunk size
+            read_bufsize=CHUNK_SIZE,  # Use optimized chunk size
         ) as response:
             if response.status != 200:
                 error_data = await response.json()
@@ -184,7 +191,7 @@ async def get_response(session: aiohttp.ClientSession, prompt: str) -> str:
                 async for line in response.content:
                     if line:
                         try:
-                            line_text = line.decode('utf-8').strip()
+                            line_text = line.decode("utf-8").strip()
                             content = await adapter.parse_stream_line(line_text)
                             if content:
                                 buffer.append(content)
