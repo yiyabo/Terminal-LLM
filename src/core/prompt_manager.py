@@ -9,7 +9,6 @@
 日期：2024-12-10
 """
 
-import os
 from pathlib import Path
 from typing import List, Optional
 
@@ -89,14 +88,10 @@ class PromptManager:
             "优化",
         }
 
-        # 将用户输入转换为小写并分词
-        words = set(user_input.lower().split())
-
         # 检测是否包含编程关键词
         if any(keyword in user_input.lower() for keyword in coding_keywords):
             return "coding"
 
-        # 后续可以添加其他场景的检测逻辑
         return None
 
     def get_combined_prompt(self, user_input: str) -> str:

@@ -12,7 +12,6 @@
 """
 
 import asyncio
-import json
 import logging
 import time
 from typing import Optional
@@ -83,7 +82,7 @@ def print_welcome_message() -> None:
 
 
 def change_language(lang: str) -> None:
-    """切换界面语言。
+    """切换界��语言。
 
     参数：
         lang (str): 语言代码，支持 'en' 和 'zh'
@@ -97,7 +96,7 @@ def change_language(lang: str) -> None:
 
 # ===== 命令处理 =====
 async def handle_user_input(user_input: str) -> Optional[bool]:
-    """处理用户输入的命���。
+    """处理用户输入的命令。
 
     参数：
         user_input (str): 用户输入的命令
@@ -182,8 +181,8 @@ async def get_response(session: aiohttp.ClientSession, prompt: str) -> str:
         ) as response:
             if response.status != 200:
                 error_data = await response.json()
-                error_message = error_data.get("error", {}).get("message", "未知错误")
-                raise APIError(f"API 错误 ({response.status}): {error_message}")
+                error_msg = error_data.get("error", {}).get("message", "未知错误")
+                raise APIError(f"API 错误 ({response.status}): {error_msg}")
 
             # 使用流式响应面板
             with StreamingPanel() as panel:
@@ -265,9 +264,8 @@ async def main() -> None:
                 try:
                     await asyncio.sleep(1)
                 except KeyboardInterrupt:
-                    console.print(
-                        f"\n[bold yellow]{get_current_language()['exit_message']}[/bold yellow]"
-                    )
+                    msg = get_current_language()["exit_message"]
+                    console.print(f"\n[bold yellow]{msg}[/bold yellow]")
                     return
 
             except (NetworkError, RequestTimeoutError, APIError, ChatError) as e:
