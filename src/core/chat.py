@@ -16,11 +16,39 @@ import logging
 import time
 from typing import Optional
 
+from prompt_toolkit.styles import Style
+
+# 定义样式
+style = Style.from_dict(
+    {
+        "command": "#ansiyellow bold",
+        "bottom-toolbar": "#ansibrightblack",
+        "bottom-toolbar.text": "#ansiwhite",
+        "bottom-toolbar.key": "#ansiyellow",
+        "completion-menu.completion": "bg:#008888 #ffffff",
+        "completion-menu.completion.current": "bg:#00aaaa #000000",
+        "completion-menu.meta.completion": "bg:#444444 #ffffff",
+        "completion-menu.meta.completion.current": "bg:#666666 #ffffff",
+    }
+)
+
 import aiohttp
 from prompt_toolkit import PromptSession
-from prompt_toolkit.completion import WordCompleter
+from prompt_toolkit.completion import (
+    Completer,
+    Completion,
+    NestedCompleter,
+    WordCompleter,
+)
+from prompt_toolkit.document import Document
+from prompt_toolkit.filters import is_done
 from prompt_toolkit.formatted_text import HTML
 from prompt_toolkit.history import InMemoryHistory
+from prompt_toolkit.key_binding import KeyBindings
+from prompt_toolkit.keys import Keys
+from prompt_toolkit.layout.containers import HSplit, Window
+from prompt_toolkit.layout.controls import FormattedTextControl
+from prompt_toolkit.layout.layout import Layout
 from prompt_toolkit.shortcuts import CompleteStyle
 
 from src.config import (
@@ -56,22 +84,74 @@ logging.basicConfig(
     handlers=[logging.FileHandler(LOG_FILE), logging.StreamHandler()],
 )
 
-# 命令自动补全
-command_completer = WordCompleter(
-    list(COMMANDS.keys()),
-    ignore_case=True,
-    sentence=True,  # 允许输入空格
-    match_middle=True,  # 允许在中间匹配
-)
+
+class CommandCompleter(Completer):
+    """自定义命令补全器"""
+
+    def __init__(self, commands):
+        self.commands = commands
+
+    def get_completions(self, document: Document, complete_event):
+        # 只在输入 / 后触发
+        if document.text.startswith("/"):
+            word = document.text[1:]  # 去掉 / 前缀
+            for command, description in self.commands.items():
+                if command[1:].startswith(word.lower()):  # 不区分大小写的比较
+                    yield Completion(
+                        text=command,  # 使用完整命令（包含/）
+                        start_position=-len(document.text),  # 从开头替换整个输入
+                        display=command,
+                        display_meta=description,
+                        style="class:command",
+                    )
+
+
+# 创建自定义补全器
+command_completer = CommandCompleter(COMMANDS)
+
+# 创建按键绑定
+kb = KeyBindings()
+
+
+@kb.add("tab")
+def _(event):
+    """处理 Tab 键"""
+    buff = event.current_buffer
+    # 如果当前有补全菜单
+    if buff.complete_state:
+        buff.complete_next()
+    else:
+        buff.start_completion(select_first=False)
+
+
+@kb.add("enter")
+def _(event):
+    """处理 Enter 键"""
+    buff = event.current_buffer
+    # 如果有补全菜单打开，就接受补全但不提交
+    if buff.complete_state:
+        buff.complete_state = None
+    # 否则正常提交
+    else:
+        buff.validate_and_handle()
+
 
 # 创建 prompt session
 prompt_session = PromptSession(
     history=InMemoryHistory(),
     completer=command_completer,
-    complete_while_typing=True,
     enable_history_search=True,
-    complete_style=CompleteStyle.MULTI_COLUMN,  # 用多列样式显示补全选项
-    mouse_support=True,  # 启用鼠标支持
+    complete_style=CompleteStyle.COLUMN,  # 改为垂直列表
+    mouse_support=False,  # 禁用鼠标支持以保持文本选择功能
+    bottom_toolbar=HTML("<b>提示：</b> 输入 / 后按 Tab 显示命令列表，使用 ↑↓ 键选择"),
+    style=style,
+    complete_in_thread=True,  # 在线程中运行补全，避免阻塞
+    auto_suggest=None,  # 禁用自动建议
+    enable_system_prompt=False,  # 禁用系统提示
+    enable_suspend=True,  # 启用挂起功能
+    reserve_space_for_menu=4,  # 为菜单保留空间
+    complete_while_typing=False,  # 禁用输入时的补全
+    key_bindings=kb,  # 使用自定义按键绑定
 )
 
 
@@ -82,7 +162,7 @@ def print_welcome_message() -> None:
 
 
 def change_language(lang: str) -> None:
-    """切换界��语言。
+    """切换界面语言。
 
     参数：
         lang (str): 语言代码，支持 'en' 和 'zh'
@@ -256,7 +336,7 @@ async def main() -> None:
                 # 保存历史记录
                 chat_history.add_interaction(user_input, response)
 
-                # 显示响应时间
+                # 示响应时间
                 console.print(f"\n[dim]响应时间: {elapsed_time:.2f} 秒[/dim]")
 
             except KeyboardInterrupt:
