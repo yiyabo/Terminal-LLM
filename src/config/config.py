@@ -28,8 +28,9 @@
 
 import os
 import warnings
-from dotenv import load_dotenv
+
 import aiohttp
+from dotenv import load_dotenv
 
 # Suppress python-dotenv warnings about commented lines
 warnings.filterwarnings("ignore", category=UserWarning, module="dotenv.main")
@@ -71,15 +72,15 @@ MODEL_NAMES = {
     "silicon": "Qwen/QwQ-32B-Preview",
 }
 
-MODEL_NAME = os.getenv("MODEL_NAME", MODEL_NAMES.get(MODEL_TYPE, MODEL_NAMES["silicon"]))
+MODEL_NAME = os.getenv(
+    "MODEL_NAME", MODEL_NAMES.get(MODEL_TYPE, MODEL_NAMES["silicon"])
+)
 
 # 重试配置
 MAX_RETRIES = 2  # 减少重试次数以提高响应速度
 RETRY_DELAY = 1  # 减少重试延迟
 REQUEST_TIMEOUT = aiohttp.ClientTimeout(
-    total=60,        # 总超时时间（1分钟）
-    connect=10,      # 连接超时
-    sock_read=45     # 读取超时
+    total=60, connect=10, sock_read=45  # 总超时时间（1分钟）  # 连接超时  # 读取超时
 )  # 优化超时设置
 
 # 缓存配置
@@ -128,8 +129,10 @@ LANGUAGES = {
     },
 }
 
+
 class LanguageManager:
     """语言管理器"""
+
     _current_language = "zh"
 
     @classmethod
@@ -163,5 +166,6 @@ COMMANDS = {
     "/history": "显示历史记录",
     "/lang": "切换语言 (en/zh)",
     "/help": "显示帮助信息",
+    "/copy": "使用/copy -1 即可复制最近的代码块，或者使用 /copy [代码快编号]",
     "/load": "加载文档到知识库 (/load [文件路径]) - 首次使用时会下载必要的 AI 模型（约 100MB）",
 }

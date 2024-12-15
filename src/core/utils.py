@@ -9,12 +9,14 @@
 - ChatHistory：管理对话历史的类
 - ResponseCache：管理响应缓存的类
 - format_bold_text：文本格式化函数
+- format_code_blocks：代码块格式化函数
 
 依赖：
 - json：用于数据序列化
 - hashlib：用于生成缓存键
 - typing：类型注解支持
 - re：正则表达式支持
+- pyperclip：系统剪贴板支持
 
 作者：Yiyabo!
 日期：2024-12-10
@@ -24,9 +26,221 @@ import hashlib
 import json
 import os
 import re
-from typing import Dict, List, Optional
+from typing import Dict, List, Optional, Tuple
+
+import pyperclip
+from rich import box
+from rich.console import Console, Group
+from rich.layout import Layout
+from rich.panel import Panel
+from rich.spinner import Spinner
+from rich.syntax import Syntax
+from rich.text import Text
 
 from src.config import MAX_HISTORY_ITEMS
+
+console = Console()
+
+try:
+    import pyperclip
+
+    CLIPBOARD_AVAILABLE = True
+except ImportError:
+    CLIPBOARD_AVAILABLE = False
+    print(
+        "[yellow]警告: pyperclip 模块未安装，复制功能将不可用。请运行 'pip install pyperclip' 安装。[/yellow]"
+    )
+
+
+def detect_code_blocks(text: str) -> List[Tuple[str, str, int, int]]:
+    """检测文本中的代码块。
+
+    参数：
+        text (str): 要检测的文本
+
+    返回：
+        List[Tuple[str, str, int, int]]: 代码块列表，每个元素为 (语言, 代码内容, 起始位置, 结束位置)
+    """
+    # 匹配 ```language\ncode\n``` 格式的代码块
+    pattern = r"```(\w*)\n(.*?)\n```"
+    matches = []
+
+    for match in re.finditer(pattern, text, re.DOTALL):
+        lang = match.group(1) or "text"  # 如果没有指定语言，默认为text
+        code = match.group(2)
+        start = match.start()
+        end = match.end()
+        matches.append((lang, code, start, end))
+
+    return matches
+
+
+def copy_to_clipboard(text: str) -> None:
+    """复制文本到系统剪贴板。
+
+    参数：
+        text (str): 要复制的文本
+    """
+    if not CLIPBOARD_AVAILABLE:
+        console.print("[yellow]复制功能未启用，请先安装 pyperclip：pip install pyperclip[/yellow]")
+        return
+
+    try:
+        pyperclip.copy(text)
+        console.print("[green]✓ 代码已复制到剪贴板[/green]")
+    except Exception as e:
+        console.print(f"[red]复制失败: {str(e)}[/red]")
+
+
+# 全局代码块存储
+class CodeBlockStore:
+    """代码块存储类，用于管理所有代码块"""
+
+    def __init__(self):
+        self.blocks = []
+
+    def add_block(self, code: str, language: str) -> int:
+        """添加代码块并返回其ID"""
+        self.blocks.append((code, language))
+        return len(self.blocks)
+
+    def get_block(self, index: int) -> tuple[str, str]:
+        """获取代码块，支持负数索引"""
+        if not self.blocks:
+            raise ValueError("没有可用的代码块")
+
+        # 处理负数索引（相对引用）
+        if index < 0:
+            index = len(self.blocks) + index
+
+        # 将索引转换为1-based到0-based
+        real_index = index - 1
+
+        if not (0 <= real_index < len(self.blocks)):
+            raise ValueError(f"代码块 #{index} 不存在")
+
+        return self.blocks[real_index]
+
+    def clear(self):
+        """清空所有代码块"""
+        self.blocks = []
+
+
+# 创建全局实例
+code_store = CodeBlockStore()
+
+
+def format_code_block(code: str, language: str = "text", block_id: int = 1) -> Panel:
+    """格式化单个代码块。
+
+    参数：
+        code (str): 代码内容
+        language (str): 代码语言
+        block_id (int): 代码块编号
+
+    返回：
+        Panel: 格式化后的代码面板
+    """
+    # 存储代码块
+    code_store.add_block(code.strip(), language)
+
+    # 创建语法高亮对象
+    syntax = Syntax(
+        code.strip(),
+        language,
+        theme="monokai",
+        line_numbers=True,
+        word_wrap=True,
+        code_width=80,
+        background_color="default",
+    )
+
+    # 创建面板
+    panel = Panel(
+        syntax,
+        box=box.ROUNDED,
+        title=f"[bold blue]{language}[/bold blue]",
+        subtitle=f"[bold white]代码块 #{block_id}[/bold white]",
+        border_style="blue",
+        padding=(0, 1),
+        width=console.width - 4,
+        expand=False,
+    )
+
+    return panel
+
+
+def copy_code_block(block_id: int) -> bool:
+    """复制指定编号的代码块。
+
+    参数：
+        block_id (int): 代码块编号（支持负数索引）
+
+    返回：
+        bool: 是否成功复制
+    """
+    if not CLIPBOARD_AVAILABLE:
+        console.print("[yellow]复制功能未启用，请先安装 pyperclip：pip install pyperclip[/yellow]")
+        return False
+
+    try:
+        code, _ = code_store.get_block(block_id)
+        pyperclip.copy(code)
+        console.print(f"[green]✓ 代码块 #{block_id} 已复制到剪贴板[/green]")
+        return True
+    except ValueError as e:
+        console.print(f"[red]错误：{str(e)}[/red]")
+        return False
+    except Exception as e:
+        console.print(f"[red]复制失败: {str(e)}[/red]")
+        return False
+
+
+def format_text_with_code_blocks(text: str) -> Group:
+    """格式化包含代码块的文本。
+
+    参数：
+        text (str): 要格式化的文本
+
+    返回：
+        Group: 包含文本和代码块的渲染组
+    """
+    # 检测代码块
+    code_blocks = detect_code_blocks(text)
+    if not code_blocks:
+        return Group(Text.from_markup(format_bold_text(text)))
+
+    # 处理文本和代码块
+    renderables = []
+    last_end = 0
+    block_id = 1
+
+    for lang, code, start, end in code_blocks:
+        # 添加代码块之前的文本
+        if start > last_end:
+            normal_text = Text.from_markup(format_bold_text(text[last_end:start]))
+            renderables.append(normal_text)
+
+        # 添加代码面板
+        panel = format_code_block(code, lang, block_id)
+        renderables.append(panel)
+
+        # 添加复制提示
+        copy_hint = Text.from_markup(
+            f"[blue]输入 [bold]/copy {block_id}[/bold] 或 [bold]/copy -{len(code_blocks)-block_id+1}[/bold] 复制此代码块[/blue]"
+        )
+        renderables.append(copy_hint)
+        renderables.append(Text("\n"))  # 添加空行
+
+        last_end = end
+        block_id += 1
+
+    # 添加最后一个代码块之后的文本
+    if last_end < len(text):
+        final_text = Text.from_markup(format_bold_text(text[last_end:]))
+        renderables.append(final_text)
+
+    return Group(*renderables)
 
 
 class ChatHistory:
@@ -41,7 +255,7 @@ class ChatHistory:
 
     示例：
         >>> chat_history = ChatHistory("history.json")
-        >>> chat_history.add_interaction("你好", "你好！很高兴见到你。")
+        >>> chat_history.add_interaction("你好", "你好！很高兴见你。")
         >>> recent = chat_history.get_recent_history(5)
     """
 
@@ -58,7 +272,7 @@ class ChatHistory:
         """从文件加载历史记录。
 
         返回：
-            List[Dict]: 加载的历史记录列表，如果文件不存在或格式错误则返回空列表
+            List[Dict]: 加载的历史记录列表，果文件不存在或格式错误则返回空列表
         """
         if os.path.exists(self.history_file):
             try:
@@ -95,7 +309,7 @@ class ChatHistory:
             n (int): 要获取的历史记录数量，默认为 5
 
         返回：
-            List[Dict]: 最近的 n 条历史记录
+            List[Dict]: 最近的 n 条史记录
         """
         return self.history[-n:] if self.history else []
 
@@ -108,7 +322,7 @@ class ChatHistory:
 class ResponseCache:
     """响应缓存管理类。
 
-    该类用于缓存 AI 的响应，通过 MD5 哈希值作为键来存储和检索响应，
+    该类用于存 AI 的响应，通过 MD5 哈希值作为键来存储和检索响应，
     可以提高系统的响应速度，避免重复计算。
 
     属性：
@@ -127,7 +341,7 @@ class ResponseCache:
         """初始化响应缓存管理器。
 
         参数：
-            cache_file (str): 缓存文件的路径
+            cache_file (str): 缓存文件��路径
         """
         self.cache_file = cache_file
         self.cache: Dict = self._load_cache()
@@ -147,7 +361,7 @@ class ResponseCache:
         return {}
 
     def _save_cache(self):
-        """将缓存保存到文件。"""
+        """将缓存存到文。"""
         with open(self.cache_file, "w", encoding="utf-8") as f:
             json.dump(self.cache, f, ensure_ascii=False, indent=2)
 
@@ -189,9 +403,9 @@ class ResponseCache:
 
 
 def format_bold_text(text: str) -> str:
-    """格式化文本，支持 Markdown 风格的加粗和列表。
+    """格式化本，支持 Markdown 风格的加粗和表。
 
-    将 Markdown 风格的加粗语法（**文本**）转换为 Rich 库支持的样式，
+    将 Markdown 风格的加粗法（**文本**）转换为 Rich 库支持的样式，
     并将破折号列表转换为圆点列表。
 
     参数：
